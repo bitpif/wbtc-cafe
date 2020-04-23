@@ -1,0 +1,9 @@
+export const ZBTC_MAIN = '0x88c64a7d2ecc882d558dd16abc1537515a78bb7d'
+export const ZBTC_TEST = '0xc6069e8dea210c937a846db2cebc0f58ca111f26'
+export const ADAPTER_MAIN = '0xf4210d84ca07d1d750059e1fb56c3c94e92a5eee'
+// export const ADAPTER_TEST = '0x9c8158bb0d5c99d8623159070eaf3af7cda705af'
+export const ADAPTER_TEST = '0x7262337b576cecbf9febb6b8fbb5210b98d43139' // curve
+export const BTC_SHIFTER_MAIN = '0x1258d7ff385d1d81017d4a3d464c02f74c61902a'
+export const BTC_SHIFTER_TEST = '0xe5c5dae20cde920aeecae132fb37321523e2fba5'
+export const ZBTC_UNISWAP_TEST = '0x66Cf36abceb7f36640000C41dc626afC203180cF'
+export const UNISWAP_TEST = '0xD3E51Ef092B2845f10401a0159B2B96e8B6c3D30'
