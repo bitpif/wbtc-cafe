@@ -4,8 +4,7 @@ import { withStyles } from '@material-ui/styles';
 import theme from '../theme/theme'
 import classNames from 'classnames'
 import RenSDK from "@renproject/ren";
-import { createTransaction, submitToEthereum } from '../utils/renUtils'
-import { removeTx } from '../utils/txUtils'
+import { removeTx, initConvertFromEthereum } from '../utils/txUtils'
 import { resetWallet, setNetwork, MINI_ICON_MAP } from '../utils/walletUtils'
 import ConversionStatus from '../components/ConversionStatus';
 
@@ -35,15 +34,24 @@ import DAI from '../assets/dai.png'
 import USDC from '../assets/usdc.png'
 
 const styles = () => ({
+    container: {
+        background: '#fff',
+        border: '0.5px solid ' + theme.palette.divider,
+        minHeight: 200,
+        height: '100%'
+    },
     viewLink: {
         fontSize: 12,
         marginRight: theme.spacing(1),
         textDecoration: 'underline',
         cursor: 'pointer',
-        color: '#fff'
+        // color: '#fff'
     },
     titleWrapper: {
       paddingBottom: theme.spacing(2)
+    },
+    actionsCell: {
+      minWidth: 150
     }
 })
 
@@ -68,17 +76,17 @@ class TransactionsTableContainer extends React.Component {
 
         const transactions = store.get('convert.transactions')
 
-        return <div>
-          <div className={classes.titleWrapper}>
+        return <div className={classes.container}>
+          {/*<div className={classes.titleWrapper}>
             <Typography variant='subtitle1'><b>Conversions</b></Typography>
-          </div>
+          </div>*/}
           <Table className={classes.table}>
             <TableHead>
               <TableRow>
-                <TableCell align="left">Date</TableCell>
-                <TableCell align="left">Conversion</TableCell>
+                <TableCell align="left">Transaction</TableCell>
                 <TableCell>Status</TableCell>
-                <TableCell></TableCell>
+                {/*<TableCell align="left">Date</TableCell>*/}
+                <TableCell><div className={classes.actionsCell}></div></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -86,15 +94,21 @@ class TransactionsTableContainer extends React.Component {
                 const destAsset = tx.destAsset.toUpperCase()
                 const sourceAsset = tx.sourceAsset.toUpperCase()
                 return <TableRow key={i}>
-                  <TableCell align="left"><Typography variant='caption'>01/20/2020</Typography></TableCell>
                   <TableCell align="left"><Typography variant='caption'>{tx.amount} {sourceAsset} → {destAsset}</Typography></TableCell>
                   <TableCell><Typography variant='caption'><ConversionStatus tx={tx} /></Typography></TableCell>
+                  {/*<TableCell align="left"><Typography variant='caption'>01/20/2020</Typography></TableCell>*/}
                   <TableCell>
-                      {tx.awaiting === 'btc-init' || tx.error || !tx.awaiting ? <div>
-                      {tx.txHash ? <a className={classes.viewLink} target='_blank' href={'https://' + (tx.network === 'testnet' ? 'kovan.' : '') + 'etherscan.io/tx/'+tx.txHash}>View transaction</a> : null}
-                      <span className={classes.viewLink} onClick={() => {
-                          removeTx(store, tx)
-                      }}>{!tx.awaiting ? 'Clear' : 'Cancel'}</span></div> : null}
+                      <Grid container justify='flex-end'>
+                        {tx.awaiting === 'btc-init' || tx.error || !tx.awaiting ? <div>
+                          {tx.txHash ? <a className={classes.viewLink} target='_blank' href={'https://' + (tx.destNetworkVersion === 'testnet' ? 'kovan.' : '') + 'etherscan.io/tx/'+tx.txHash}>View transaction</a> : null}
+                          {tx.error && tx.awaiting === 'eth-settle' && <a className={classes.viewLink} onClick={() => {
+                              initConvertFromEthereum(tx)
+                          }}>Submit</a>}
+                          {!tx.error && <a className={classes.viewLink} onClick={() => {
+                              removeTx(store, tx)
+                          }}>{!tx.awaiting ? 'Clear' : 'Cancel'}</a>}
+                        </div> : null}
+                      </Grid>
                   </TableCell>
                 </TableRow>
               })}

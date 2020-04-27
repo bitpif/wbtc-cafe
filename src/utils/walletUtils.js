@@ -21,16 +21,18 @@ import {
     ADAPTER_MAIN,
     ADAPTER_TEST,
     BTC_SHIFTER_MAIN,
-    BTC_SHIFTER_TEST
+    BTC_SHIFTER_TEST,
+    WBTC_TEST
 } from './web3Utils'
 
 import {
-    initMonitoring
+    initMonitoring,
+    gatherFeeData
 } from './txUtils'
 
 import { getStore } from '../services/storeService'
 
-import zbtcABI from "./zbtcABI.json";
+import erc20ABI from "./erc20ABI.json";
 
 export const ASSETS = ['BTC', 'WBTC']
 
@@ -59,6 +61,67 @@ export const MINI_ICON_MAP = {
     dai: DAI,
     usdc: USDC,
     wbtc: WBTC
+}
+
+export const updateAllowance = async function() {
+    const store = getStore()
+
+    const web3 = store.get('localWeb3')
+    const walletAddress = store.get('localWeb3Address')
+
+    if (!web3 || !walletAddress) {
+        return
+    }
+
+    const contract = new web3.eth.Contract(erc20ABI, WBTC_TEST);
+    const allowance = await contract.methods.allowance(walletAddress, ADAPTER_TEST).call();
+
+    console.log(allowance)
+
+    store.set('convert.adapterWbtcAllowance', Number(web3.utils.fromWei(allowance)).toFixed(8))
+}
+
+export const setWbtcAllowance = async function() {
+    const store = getStore()
+    const walletAddress = store.get('localWeb3Address')
+    const web3 = store.get('localWeb3')
+
+    const contract = new web3.eth.Contract(erc20ABI, WBTC_TEST)
+    store.set('convert.adapterWbtcAllowanceRequesting', true)
+    try {
+        await contract.methods.approve(ADAPTER_TEST, web3.utils.toWei('1000000')).send({
+            from: walletAddress
+        })
+        updateAllowance();
+        store.set('convert.adapterWbtcAllowanceRequesting', false)
+    } catch(e) {
+        console.log(e)
+        store.set('convert.adapterWbtcAllowanceRequesting', false)
+    }
+}
+
+export const updateBalance = async function() {
+    const store = this.props.store
+
+    const web3 = store.get('web3')
+    const walletAddress = store.get('walletAddress')
+    const zbtcAddress = store.get('zbtcAddress')
+
+    if (!web3 || !walletAddress) {
+        return
+    }
+
+    const contract = new web3.eth.Contract(erc20ABI, zbtcAddress);
+    const balance = await contract.methods.balanceOf(walletAddress).call();
+    const ethBal = await web3.eth.getBalance(walletAddress);
+
+    // console.log('update balance', balance, ethBal)
+
+    if (!ethBal) return
+
+    store.set('ethBalance', Number(web3.utils.fromWei(ethBal)).toFixed(8))
+    store.set('btcBalance', parseInt(balance.toString()) / 10 ** 8)
+    store.set('loadingBalances', false)
 }
 
 export const initLocalWeb3 = async function() {
@@ -111,12 +174,15 @@ export const initLocalWeb3 = async function() {
 
     if (network === 'testnet') {
         // updateWalletData.bind(this)()
+        updateAllowance()
+        gatherFeeData()
         initMonitoring()
     }
 
     if (window.ethereum) {
         window.ethereum.on('accountsChanged', function (accounts) {
             store.set('localWeb3Address', accounts[0])
+            updateAllowance()
         })
     }
 
@@ -141,35 +207,7 @@ export const resetWallet = async function() {
     store.set('transactions', [])
 }
 
-export const updateBalance = async function() {
-    const store = this.props.store
 
-    const web3 = store.get('web3')
-    const walletAddress = store.get('walletAddress')
-    const zbtcAddress = store.get('zbtcAddress')
-
-    if (!web3 || !walletAddress) {
-        return
-    }
-    // else if (web3.eth.accounts[0] && (web3.eth.accounts[0].toLowerCase() !== walletAddress.toLowerCase())) {
-    //     // sign out when wallet switches
-    //     resetWallet.bind(this)()
-    // }
-
-    // console.log(web3.eth.accounts, walletAddress)
-
-    const contract = new web3.eth.Contract(zbtcABI, zbtcAddress);
-    const balance = await contract.methods.balanceOf(walletAddress).call();
-    const ethBal = await web3.eth.getBalance(walletAddress);
-
-    // console.log('update balance', balance, ethBal)
-
-    if (!ethBal) return
-
-    store.set('ethBalance', Number(web3.utils.fromWei(ethBal)).toFixed(8))
-    store.set('btcBalance', parseInt(balance.toString()) / 10 ** 8)
-    store.set('loadingBalances', false)
-}
 
 export const setNetwork = async function(network) {
     const {
@@ -198,217 +236,7 @@ export const setAddresses = async function() {
     }
 }
 
-export const initBrowserWallet = async function() {
-    const store = this.props.store
-
-    store.set('showSignIn', true)
-    store.set('walletLoading', true)
-    store.set('walletConnectMessage', 'Connecting Metamask wallet...')
-
-    let web3Provider;
-
-    // Initialize web3 (https://medium.com/coinmonks/web3-js-ethereum-javascript-api-72f7b22e2f0a)
-    // Modern dApp browsers...
-    if (window.ethereum) {
-        web3Provider = window.ethereum;
-        try {
-            // Request account access
-            await window.ethereum.enable();
-        } catch (error) {
-            // User denied account access...
-            // console.error("User denied account access")
-        }
-    }
-    // Legacy dApp browsers...
-    else if (window.web3) {
-        web3Provider = window.web3.currentProvider;
-    }
-    // If no injected web3 instance is detected, fall back to Ganache
-    else {
-        this.log("Please install MetaMask!");
-    }
-
-    const network = store.get('selectedNetwork')
-    const web3Network = await DetectNetwork(web3Provider)
-
-    if (network === 'testnet' && web3Network.type !== 'kovan') {
-        store.set('walletLoading', false)
-        store.set('walletConnectMessage', 'Please set your Metamask to the Kovan network to continue.')
-        return
-    } else if (network === 'mainnet' && web3Network.type !== 'mainnet') {
-        store.set('walletLoading', false)
-        store.set('walletConnectMessage', 'Please set your Metamask to the Mainnet network to continue.')
-        return
-    }
-
-    const web3 = new Web3(web3Provider);
-    const walletType = 'browser'
-    const accounts = await web3.eth.getAccounts()
-    const sdk = new RenSDK(network === 'testnet' ? 'testnet' : 'chaosnet')
-
-    // console.log('init browser', web3, sdk)
-
-    // this.signAndSubmit()
-
-    await window.ethereum.enable();
-
-    try {
-        store.set('walletConnectMessage', 'Connecting to 3Box...')
-
-        const box = await Box.openBox(window.ethereum.selectedAddress, window.ethereum)
-        const space = await box.openSpace("roundabout")
-        const txData = await space.public.get('transactions')
-        const transactions = txData ? JSON.parse(txData) : []
-
-        store.set('walletLoading', false)
-        store.set('walletConnectMessage', '')
-        store.set('walletAddress', accounts[0])
-        store.set('web3', web3)
-        store.set('sdk', sdk)
-        store.set('walletType', walletType)
-        store.set('box', box)
-        store.set('space', space)
-        store.set('transactions', transactions)
-
-        // for debugging
-        window.txs = transactions
-
-        store.set('showSignIn', false)
-
-        updateBalance.bind(this)();
-        initMonitoring.bind(this)()
-    } catch (e) {
-        store.set('walletConnectMessage', '')
-        store.set('walletLoading', false)
-        store.set('showSignIn', false)
-    }
-
-    window.ethereum.on('accountsChanged', (accounts) => {
-        resetWallet.bind(this)()
-        store.set('showSignIn', true)
-    })
-}
-
-export const initPortis = async function() {
-    const store = this.props.store
-    store.set('walletLoading', true)
-    store.set('walletConnectMessage', 'Connecting Portis wallet...')
-
-    const network = store.get('selectedNetwork')
-    const portis = new Portis('682fbfbd-b17a-4a81-92bb-83b381013d08', network === 'testnet' ? 'kovan' : 'mainnet');
-    const web3 = new Web3(portis.provider);
-    const walletType = 'portis'
-    const accounts = await web3.eth.getAccounts()
-    const sdk = new RenSDK(network === 'testnet' ? 'testnet' : 'chaosnet')
-
-    // console.log('init portis', portis, web3, accounts)
-
-    try {
-        store.set('walletConnectMessage', 'Connecting to 3Box...')
-
-        const box = await Box.openBox(accounts[0], portis.provider)
-        const space = await box.openSpace("roundabout")
-        const txData = await space.public.get('transactions')
-        const transactions = txData ? JSON.parse(txData) : []
-
-        store.set('walletLoading', false)
-        store.set('walletConnectMessage', '')
-        store.set('walletAddress', accounts[0])
-        store.set('web3', web3)
-        store.set('sdk', sdk)
-        store.set('walletType', walletType)
-        store.set('space', space)
-        store.set('box', box)
-        store.set('transactions', transactions)
-        store.set('showSignIn', false)
-
-        // for debugging
-        window.txs = transactions
-
-        updateBalance.bind(this)();
-        initMonitoring.bind(this)()
-
-    } catch (e) {
-        store.set('walletConnectMessage', '')
-        store.set('walletLoading', false)
-        store.set('showSignIn', false)
-        return
-    }
-}
-
-export const initTorus = async function() {
-    const store = this.props.store
-    store.set('walletLoading', true)
-    store.set('walletConnectMessage', 'Connecting Torus wallet...')
-
-    const torus = new Torus({
-        buttonPosition: 'top-left' // default: bottom-left
-    });
-
-    const network = store.get('selectedNetwork')
-
-    const torusConfig = network === 'testnet' ? {
-        buildEnv: 'production', // default: production
-        enableLogging: true, // default: false
-        network: {
-            host: 'kovan', // default: mainnet
-            chainId: 42, // default: 1
-            networkName: 'Kovan Test Network' // default: Main Ethereum Network
-        },
-        showTorusButton: false // default: true
-    } : {
-        buildEnv: 'production', // default: production
-        enableLogging: true, // default: false
-        network: {
-            host: 'mainnet', // default: mainnet
-            chainId: 1, // default: 1
-            networkName: 'Main Ethereum Network' // default: Main Ethereum Network
-        },
-        showTorusButton: false // default: true
-    }
-
-    await torus.init(torusConfig);
-    await torus.login(); // await torus.ethereum.enable()
-    const web3 = new Web3(torus.provider);
-    const walletType = 'torus'
-    const accounts = await web3.eth.getAccounts()
-    const sdk = new RenSDK(network === 'testnet' ? 'testnet' : 'chaosnet')
-
-    try {
-        store.set('walletConnectMessage', 'Connecting to 3Box...')
-        const box = await Box.openBox(accounts[0], torus.provider)
-        const space = await box.openSpace("roundabout")
-        const txData = await space.public.get('transactions')
-        const transactions = txData ? JSON.parse(txData) : []
-
-        store.set('walletLoading', false)
-        store.set('walletConnectMessage', '')
-        store.set('walletAddress', accounts[0])
-        store.set('web3', web3)
-        store.set('sdk', sdk)
-        store.set('walletType', walletType)
-        store.set('space', space)
-        store.set('box', box)
-        store.set('transactions', transactions)
-
-        // for debugging
-        window.txs = transactions
-
-        store.set('showSignIn', false)
-
-        updateBalance.bind(this)();
-        initMonitoring.bind(this)()
-    } catch (e) {
-        store.set('walletConnectMessage', '')
-        store.set('walletLoading', false)
-        store.set('showSignIn', false)
-    }
-}
-
-
-
 export default {
-    initBrowserWallet,
     resetWallet,
     setNetwork,
     updateBalance

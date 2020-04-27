@@ -6,7 +6,7 @@ import classNames from 'classnames'
 import RenSDK from "@renproject/ren";
 import DetectNetwork from "web3-detect-network";
 import { createTransaction, submitToEthereum } from '../utils/renUtils'
-import { initBrowserWallet, initPortis, initTorus, resetWallet, setNetwork } from '../utils/walletUtils'
+import { resetWallet, setNetwork } from '../utils/walletUtils'
 // import { resetWallet, setNetwork } from '../utils/walletUtils'
 
 import Web3 from "web3";
@@ -319,132 +319,7 @@ class SignInContainer extends React.Component {
         >
           <Fade in={showSignIn}>
             <Grid container className={classes.modalContent}>
-                <Grid className={classNames(classes.connectWalletPrompt)} container alignItems='center' justify='center'>
 
-                    {/*<Button
-                        fullWidth={true}
-                        variant="outlined"
-                        className={classes.networkButton}
-                        ref={this.anchorRef}
-                        aria-controls={showNetworkMenu ? 'menu-list-grow' : undefined}
-                        aria-haspopup="true"
-                        onClick={this.toggleNeworkMenu.bind(this)}
-                      >
-                        <WifiIcon />&nbsp;{selectedNetwork}
-                      </Button>
-                      <Popper open={showNetworkMenu} anchorEl={this.anchorRef.current} role={undefined} transition disablePortal>
-                        {({ TransitionProps, placement }) => (
-                          <Grow
-                            {...TransitionProps}
-                            style={{ transformOrigin: placement === 'bottom' ? 'center top' : 'center bottom' }}
-                          >
-                            <Paper>
-                              <ClickAwayListener onClickAway={this.toggleNeworkMenu.bind(this)}>
-                                <MenuList autoFocusItem={showNetworkMenu} id="menu-list-grow">
-                                  <MenuItem onClick={() => { setNetwork.bind(this)('testnet') }}>Testnet</MenuItem>
-                                  <MenuItem onClick={() => { setNetwork.bind(this)('mainnet') }}>Mainnet</MenuItem>
-                                </MenuList>
-                              </ClickAwayListener>
-                            </Paper>
-                          </Grow>
-                        )}
-                      </Popper>*/}
-
-                      <Grid item xs={12} className={classes.titleContainer}>
-                        <Grid container alignItems='center' justify='center'>
-                          {walletLoading && <div><CircularProgress
-                            variant="indeterminate"
-                            disableShrink
-                            className={classes.spinner}
-                            size={14}
-                            thickness={6}
-                          /></div>}
-                          {<Typography className={classes.title} variant='subtitle2'>
-                            {walletConnectMessage || 'Select an Ethereum wallet to continue.'}
-                          </Typography>}
-                        </Grid>
-                      </Grid>
-
-                      <Grid item xs={12} className={walletLoading ? classes.disabled : ''}>
-                          <Grid container>
-                              {metamaskPossible && <Grid item xs={12} className={classes.walletOption} onClick={() => { initBrowserWallet.bind(this)() }}>
-                                  <Grid container direction='row' alignItems='center' justify='flex-start'>
-                                        <Grid item xs={3}>
-                                            <Grid container justify='center'>
-                                                <img src={MetamaskIcon} className={classes.icon} />
-                                            </Grid>
-                                        </Grid>
-                                        <Typography variant='subtitle2'>Metamask</Typography>
-                                  </Grid>
-                              </Grid>}
-                              <Grid item xs={12} className={classes.walletOption} onClick={() => { initPortis.bind(this)() }}>
-                                  <Grid container direction='row' alignItems='center' justify='flex-start'>
-                                      <Grid item xs={3}>
-                                          <Grid container justify='center'>
-                                                <img src={PortisIcon} className={classes.icon} />
-                                            </Grid>
-                                        </Grid>
-                                        <Typography variant='subtitle2'>Portis</Typography>
-                                  </Grid>
-                              </Grid>
-
-                              {/*<Grid item xs={12} className={classes.walletOption}>
-                                  <Grid container direction='row' alignItems='center' justify='flex-start'>
-                                      <Grid item xs={3}>
-                                          <Grid container justify='center'><img src={WalletConnectIcon} className={classes.icon} />
-                                          </Grid>
-                                      </Grid>
-                                      <Typography variant='subtitle2'>Wallet Connect</Typography>
-                                  </Grid>
-                              </Grid>*/}
-
-                              <Grid item xs={12} className={classes.walletOption} onClick={() => { initTorus.bind(this)() }}>
-                                  <Grid container direction='row' alignItems='center' justify='flex-start'>
-                                      <Grid item xs={3}>
-                                          <Grid container justify='center'>
-                                                <img src={TorusIcon} className={classes.icon} />
-                                          </Grid>
-                                      </Grid>
-                                      <Typography variant='subtitle2'>Torus</Typography>
-                                  </Grid>
-                              </Grid>
-                          </Grid>
-                      </Grid>
-                </Grid>
-                {/*<TextField
-                  placeholder='Username'
-                  className={classes.signInInput}
-                  margin="normal"
-                  variant="outlined"
-                  onChange={(event) => {
-                      this.setState({
-                          username: event.target.value
-                      })
-                  }}
-                />
-                <TextField
-                  type='password'
-                  placeholder='Password'
-                  className={classes.signInInput}
-                  margin="normal"
-                  variant="outlined"
-                  onChange={(event) => {
-                      this.setState({
-                          password: event.target.value
-                      })
-                  }}
-                />
-                <Button
-                  fullWidth
-                  variant="contained"
-                  size="large"
-                  color="primary"
-                  aria-label="add"
-                  className={''}
-                  onClick={this.signIn.bind(this)}
-                  >
-                  Sign In
-                </Button>*/}
             </Grid>
           </Fade>
         </Modal>

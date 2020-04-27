@@ -19,7 +19,7 @@ export default createMuiTheme({
         ].join(',')
     },
     palette: {
-        type: 'dark',
+        type: 'light',
         primary: {
             light: '#000',
             main: '#000',
@@ -61,7 +61,7 @@ export default createMuiTheme({
               }
             },
             notchedOutline: {
-                borderColor: 'rgba(255, 255, 255, 0.23) !important',
+                // borderColor: 'rgba(255, 255, 255, 0.23) !important',
                 borderWidth: '1px !important'
             },
             inputMarginDense: {
@@ -92,22 +92,28 @@ export default createMuiTheme({
         },
         MuiTableCell: {
             root: {
-                borderBottom: '0.5px solid rgba(255, 255, 255, 0.12)',
+                // borderBottom: '0.5px solid rgba(255, 255, 255, 0.12)',
             }
         },
         // .MuiToggleButtonGroup-grouped:not(:first-child)
         MuiToggleButton: {
             root: {
-                border: '1px solid rgba(255, 255, 255, 0.23)',
+                // border: '1px solid rgba(255, 255, 255, 0.23)',
                 backgroundColor: 'transparent !important',
+                '& img': {
+                  opacity: 0.75
+                },
                 // backgroundColor: '#fff',
                 '&.Mui-selected': {
                     // back
                     backgroundColor: 'rgba(255, 255, 255, 0.1) !important',
-                    // color: '#000',
+                    color: '#000',
                     fontWeight: '500',
                     '&:hover': {
                         backgroundColor: 'rgba(255, 255, 255, 0.1) !important',
+                    },
+                    '& img': {
+                      opacity: 1
                     }
                 },
                 borderRadius: 0,

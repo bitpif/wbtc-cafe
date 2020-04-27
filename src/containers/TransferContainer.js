@@ -14,9 +14,10 @@ import {
     initMonitoring,
     initConvertToEthereum,
     initConvertFromEthereum,
-    initTransfer
+    initTransfer,
+    gatherFeeData
 } from '../utils/txUtils'
-import { MINI_ICON_MAP, initLocalWeb3 } from '../utils/walletUtils'
+import { MINI_ICON_MAP, initLocalWeb3, setWbtcAllowance } from '../utils/walletUtils'
 import Web3 from "web3";
 import { ethers } from 'ethers';
 
@@ -34,6 +35,10 @@ import TransactionItem from '../components/TransactionItem';
 import adapterABI from "../utils/adapterABI.json";
 
 const styles = () => ({
+    container: {
+        background: '#fff',
+        border: '0.5px solid ' + theme.palette.divider
+    },
     transferActionTabs: {
         margin: '0px auto',
         marginTop: theme.spacing(2),
@@ -164,6 +169,10 @@ class TransferContainer extends React.Component {
         store.set('depositModalTx', tx)
     }
 
+    async gatherFeeData() {
+
+    }
+
     async newDeposit() {
         const { store } = this.props
         if (!store.get('localWeb3')) return initLocalWeb3()
@@ -192,35 +201,35 @@ class TransferContainer extends React.Component {
 
         initConvertToEthereum(tx)
 
-        //
-        // const btcFeeRates = await fetch('https://bitcoinfees.earn.com/api/v1/fees/recommended');
-        // const feeRatesJson = await btcFeeRates.json();
-        //
-        // // make this smarter
-        // store.set('btcTxFeeEstimate', sb.toBitcoin(feeRatesJson.fastestFee * 223))
-        //
-        // // initDeposit.bind(this)(tx)
-        // this.showDepositModal(tx)
-
     }
 
     async newWithdraw() {
-        // const { withdrawAmount, withdrawAddress, transactions } = this.props.store.getState()
-        //
-        // const tx = {
-        //     id: 'tx-' + Math.floor(Math.random() * (10 ** 16)),
-        //     network,
-        //     type: 'convert',
-        //     instant: false,
-        //     awaiting: 'eth-init',
-        //     destAddress: address,
-        //     destNetwork: 'bitcoin',
-        //     amount: amount,
-        //     error: false,
-        //     txHash: ''
-        // }
-        //
-        // initWithdraw.bind(this)(tx)
+        const { store } = this.props
+        if (!store.get('localWeb3')) return initLocalWeb3()
+
+        const amount = store.get('convert.amount')
+        const destination = store.get('convert.destination')
+        const network = store.get('selectedNetwork')
+        const asset = store.get('convert.selectedFormat')
+
+        const tx = {
+            id: 'tx-' + Math.floor(Math.random() * (10 ** 16)),
+            type: 'convert',
+            instant: false,
+            awaiting: 'eth-settle',
+            sourceAsset: asset,
+            sourceNetwork: 'ethereum',
+            sourceNetworkVersion: network,
+            destAddress: destination,
+            destNetwork: 'bitcoin',
+            destNetworkVersion: network,
+            destAsset: 'btc',
+            amount: amount,
+            error: false,
+            txHash: ''
+        }
+
+        initConvertFromEthereum(tx)
     }
 
     render() {
@@ -254,23 +263,31 @@ class TransferContainer extends React.Component {
         const isSignedIn = localWeb3Address && localWeb3Address.length
 
         const amount = store.get('convert.amount')
-        const fee = (Number(amount) * 0.001).toFixed(6)
-        const total = Number(amount-fee).toFixed(6)
+        const exchangeRate = store.get('convert.exchangeRate')
+        const fee = store.get('convert.networkFee')
+        const total = store.get('convert.conversionTotal')
+
+        const allowance = store.get('convert.adapterWbtcAllowance')
+        const hasAllowance = Number(amount) <= Number(allowance)
+        const allowanceRequesting = store.get('convert.adapterWbtcAllowanceRequesting')
 
         const convertAddressValid = store.get('convert.destinationValid')
         const canConvert = amount > 0 && convertAddressValid
 
+        const sourceAsset = selectedDirection ? 'WBTC' : 'BTC'
+        const destAsset = selectedDirection ? 'BTC' : 'WBTC'
+
 
         console.log('transfer render', store.getState())
 
-        return <React.Fragment>
+        return <div className={classes.container}>
             {selectedTab === 1 && <div className={classes.actionsContainer}>
                 <Grid className={classes.actions}>
                     <Grid container justify='center'>
-                        <Grid item xs={12} className={classes.title}>
+                        {/*<Grid item xs={12} className={classes.title}>
                           <Typography variant='subtitle1'><b>Convert</b></Typography>
-                        </Grid>
-                        <Grid item xs={12}>
+                        </Grid>*/}
+                        {/*<Grid item xs={12}>
                           <Grid container justify='space-between' alignItems='center'>
                               <Typography variant='caption'>Format</Typography>
                               <Button
@@ -281,9 +298,8 @@ class TransferContainer extends React.Component {
                                   Ren Bitcoin (renBTC)
                               </Button>
                           </Grid>
-                        </Grid>
+                        </Grid>*/}
                         <Grid item xs={12}>
-
                             {<Grid container className={classes.transferActionTabs}>
                                 <ToggleButtonGroup
                                     size='small'
@@ -295,13 +311,14 @@ class TransferContainer extends React.Component {
                                             store.set('convert.selectedDirection', Number(newValue))
                                             store.set('convert.amount', '')
                                             store.set('convert.destination', '')
+                                            gatherFeeData()
                                         }
                                     }}>
                                     <ToggleButton key={0} value={'0'}>
-                                      BTC → renBTC
+                                      <img src={MINI_ICON_MAP['wbtc']} className={classes.icon} /> Get WBTC
                                     </ToggleButton>
                                     <ToggleButton key={1} value={'1'}>
-                                      renBTC → BTC
+                                      <img src={MINI_ICON_MAP['btc']} className={classes.icon} /> Get BTC
                                     </ToggleButton>
                                 </ToggleButtonGroup>
                             </Grid>}
@@ -312,6 +329,7 @@ class TransferContainer extends React.Component {
                                         <CurrencyInput
                                             onAmountChange={(value)=>{
                                                 store.set('convert.amount', value)
+                                                gatherFeeData()
                                                 // store.set('depositAddress', '')
                                             }}
                                             onCurrencyChange={()=>{}}
@@ -320,7 +338,7 @@ class TransferContainer extends React.Component {
                                     <Grid item xs={12}>
                                         <TextField
                                             id="standard-read-only-input"
-                                            placeholder='Ethereum Destination'
+                                            placeholder='Ethereum Destination Address'
                                             className={classes.depositAddress}
                                             margin="dense"
                                             variant="outlined"
@@ -340,20 +358,22 @@ class TransferContainer extends React.Component {
                                         <CurrencyInput
                                             onAmountChange={(value)=>{
                                                 store.set('convert.amount', value)
+                                                gatherFeeData()
                                             }}
                                             onCurrencyChange={()=>{}}
-                                            items={['renBTC']} />
+                                            items={['WBTC']} />
                                     </Grid>
                                     <Grid item xs={12}>
                                         <TextField
                                             id="standard-read-only-input"
-                                            placeholder='Bitcoin Destination'
+                                            placeholder='Bitcoin Destination Address'
                                             className={classes.depositAddress}
                                             margin="dense"
                                             variant="outlined"
                                             onChange={(event) => {
                                                 store.set('convert.destination', event.target.value)
-                                                store.set('convert.destinationValid', AddressValidator.validate(event.target.value, 'BTC'))
+                                                store.set('convert.destinationValid', true)
+                                                // store.set('convert.destinationValid', AddressValidator.validate(event.target.value, 'BTC'))
                                             }}
                                         />
                                     </Grid>
@@ -365,15 +385,15 @@ class TransferContainer extends React.Component {
                                     <Grid item xs={12} className={classes.lineItem}>
                                         <Grid container justify='space-between'>
                                             <span>Exchange Rate</span>
-                                            <span className={classes.amt}>1.0 BTC/renBTC</span>
+                                            <span className={classes.amt}>{exchangeRate ? `1 ${sourceAsset} = ${exchangeRate} ${destAsset}` : '-'} </span>
                                         </Grid>
                                         <Grid container justify='space-between'>
                                             <span>Conversion Fee</span>
-                                            <span className={classes.amt}>{amount ? `${fee} BTC` : '-'}</span>
+                                            <span className={classes.amt}>{fee ? `${fee} BTC` : '-'}</span>
                                         </Grid>
                                         <Grid container justify='space-between'>
                                             <span>Total</span>
-                                            <span className={classes.amt}>{amount ? `~${total} renBTC` : '-'}</span>
+                                            <span className={classes.amt}>{total ? `~${total} ${destAsset}` : '-'}</span>
                                         </Grid>
                                     </Grid>
                                 </Grid>
@@ -383,7 +403,7 @@ class TransferContainer extends React.Component {
 
                     </Grid>
 
-                    {!isSignedIn && <Grid container justify='center' className={classes.actionButtonContainer}>
+                    {/*!isSignedIn && <Grid container justify='center' className={classes.actionButtonContainer}>
                         <Grid item xs={12}>
                             <Button
                                 disabled={false}
@@ -395,35 +415,42 @@ class TransferContainer extends React.Component {
                                 Connect Wallet
                             </Button>
                         </Grid>
-                    </Grid>}
+                    </Grid>*/}
 
-
-                    {isSignedIn && selectedDirection === 0 && <Grid container justify='center' className={classes.actionButtonContainer}>
+                    {selectedDirection === 0 && <Grid container justify='center' className={classes.actionButtonContainer}>
                         <Grid item xs={12}>
                             <Button
                                 disabled={!canConvert}
-                                variant='outlined'
+                                variant={canConvert ? 'outlined' : 'contained'}
                                 size="small"
                                 className={classNames(classes.margin, classes.actionButton)}
                                 onClick={this.newDeposit.bind(this)}
                                 >
-                                Convert BTC → renBTC
+                                Get WBTC
                             </Button>
                         </Grid>
                     </Grid>}
 
-                    {isSignedIn && selectedDirection === 1 && <Grid container justify='center' className={classes.actionButtonContainer}>
+                    {selectedDirection === 1 && <Grid container justify='center' className={classes.actionButtonContainer}>
                         <Grid item xs={12}>
-                            <Button
+                            {hasAllowance ? <Button
                                 disabled={!canConvert}
                                 size="small"
-                                variant='outlined'
+                                variant={canConvert ? 'outlined' : 'contained'}
                                 className={classNames(classes.margin, classes.actionButton)}
                                 onClick={this.newWithdraw.bind(this)}
                                 >
                                 {/*<UndoIcon className={classes.buttonIcon} />*/}
-                                Convert renBTC → BTC
-                            </Button>
+                                Get BTC
+                            </Button> : <Button
+                                disabled={allowanceRequesting}
+                                size="small"
+                                variant={!allowanceRequesting ? 'outlined' : 'contained'}
+                                className={classNames(classes.margin, classes.actionButton)}
+                                onClick={setWbtcAllowance}
+                                >
+                                Allow WBTC
+                            </Button>}
                         </Grid>
                     </Grid>}
 
@@ -454,7 +481,7 @@ class TransferContainer extends React.Component {
                     </Grid>
                 : null}
             </div>}
-        </React.Fragment>
+        </div>
     }
 }
 

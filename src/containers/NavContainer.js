@@ -5,7 +5,7 @@ import theme from '../theme/theme'
 import classNames from 'classnames'
 import RenSDK from "@renproject/ren";
 import { createTransaction, submitToEthereum } from '../utils/renUtils'
-import { resetWallet, setNetwork } from '../utils/walletUtils'
+import { resetWallet, setNetwork, initLocalWeb3 } from '../utils/walletUtils'
 import AssetChooserContainer from '../containers/AssetChooserContainer'
 
 import Web3 from "web3";
@@ -14,7 +14,7 @@ import Box from '3box';
 import Portis from '@portis/web3';
 import Torus from "@toruslabs/torus-embed";
 
-import RoundaboutIcon from '../assets/roundabout.svg';
+import WBTCIcon from '../assets/wbtc-logo.svg';
 import AccountIcon from '@material-ui/icons/AccountCircle';
 import WifiIcon from '@material-ui/icons/Wifi';
 
@@ -44,7 +44,8 @@ const styles = () => ({
         paddingTop: theme.spacing(4),
         paddingBottom: theme.spacing(4),
         minHeight: 52,
-        borderBottom: '0.5px solid ' + theme.palette.divider
+        borderBottom: '1px solid ' + theme.palette.divider,
+        backgroundColor: '#fff'
     },
     logo: {
         height: 22,
@@ -55,6 +56,11 @@ const styles = () => ({
         //     width: 20,
         // }
     },
+    cafe: {
+        fontFamily: 'Alex Brush',
+        marginLeft: theme.spacing(0.5),
+        fontSize: 15
+    },
     aboutButton: {
         marginRight: theme.spacing(1),
         '& svg': {
@@ -63,6 +69,7 @@ const styles = () => ({
         }
     },
     accountButton: {
+      fontSize: 12,
       '& svg': {
         marginRight: theme.spacing(1)
         },
@@ -114,7 +121,7 @@ class NavContainer extends React.Component {
             store
         } = this.props
 
-        const walletAddress = store.get('walletAddress')
+        const walletAddress = store.get('localWeb3Address')
         const showNetworkMenu = store.get('showNetworkMenu')
         const selectedNetwork = store.get('selectedNetwork')
 
@@ -127,8 +134,9 @@ class NavContainer extends React.Component {
               {<Grid  container alignItems='center'>
                 <Grid item xs={12} sm={8}>
                     <Grid container alignItems='center'>
-                          {/*<img className={classes.logo} src={RoundaboutIcon} />*/}
-                          <Typography className={classes.title}><b>Interops</b></Typography>
+                          {<img className={classes.logo} src={WBTCIcon} />}
+                          <Typography className={classes.title}><b>WBTC</b> </Typography>
+                          <Typography className={classes.title}><span className={classes.cafe}>Cafe</span></Typography>
                           {/*<Typography variant='caption'> Bitcoin on Ethereum. <a href='javascript:;' onClick={() => { store.set('showAboutModal', true) }}>How it works</a></Typography>*/}
                     </Grid>
                 </Grid>
@@ -171,11 +179,11 @@ class NavContainer extends React.Component {
                               {/*<div className={classes.faq}>
                                   <Typography variant='caption'><a href='#' onClick={() => { store.set('showAboutModal', true) }}>How it works</a></Typography>
                               </div>*/}
-                              {/*<Button onClick={() => {
-                                  store.set('showSignIn', true)
+                              {<Button onClick={() => {
+                                  initLocalWeb3()
                               }} variant="outlined" size='large' className={classes.accountButton}>
-                                {walletAddress ? (walletAddress.slice(0,7) + '...' + walletAddress.slice(walletAddress.length - 5)) : <span>Connect wallet<span className={classes.hideMobile}></span></span>}
-                              </Button>*/}
+                                {walletAddress ? (walletAddress.slice(0,7) + '...' + walletAddress.slice(walletAddress.length - 5)) : <span>Connect Wallet<span className={classes.hideMobile}></span></span>}
+                              </Button>}
 
                     </Grid>
                 </Grid>

@@ -3,7 +3,8 @@ import RenJS from "@renproject/ren";
 import BigNumber from "bignumber.js";
 import adapterABI from "../utils/adapterCurveABI.json";
 // import adapterABI from "../utils/adapterABI.json";
-import zbtcABI from "../utils/zbtcABI.json";
+import zbtcABI from "../utils/erc20ABI.json";
+import curveABI from "../utils/curveABI.json";
 // import shifterABI from "../utils/shifterABI.json";
 import { getStore } from '../services/storeService'
 import {
@@ -12,7 +13,8 @@ import {
     ADAPTER_MAIN,
     ADAPTER_TEST,
     BTC_SHIFTER_MAIN,
-    BTC_SHIFTER_TEST
+    BTC_SHIFTER_TEST,
+    CURVE_TEST
 } from './web3Utils'
 
 export const windowBlocker = function(event) {
@@ -93,162 +95,9 @@ export const removeTx = (store, tx) => {
     window.txs = txs
 }
 
-// export const completeDeposit = async function(tx) {
-//     const { store }  = this.props
-//     const web3 = store.get('web3')
-//     const walletAddress = store.get('walletAddress')
-//     const adapterAddress = store.get('adapterAddress')
-//     const { params, awaiting, renResponse, renSignature } = tx
-//
-//     const adapterContract = new web3.eth.Contract(adapterABI, adapterAddress)
-//     // console.log('adapterContract', adapterContract)
-//
-//     updateTx(store, Object.assign(tx, { awaiting: 'eth-settle' }))
-//
-//     try {
-//         const result = await adapterContract.methods.deposit(
-//             params.contractCalls[0].contractParams[0].value,
-//             params.sendAmount,
-//             renResponse.autogen.nhash,
-//             renSignature
-//         ).send({
-//             from: walletAddress
-//         })
-//         // console.log('result', result)
-//         updateTx(store, Object.assign(tx, { awaiting: '' }))
-//     } catch(e) {
-//         // console.log(e)
-//         updateTx(store, Object.assign(tx, { error: true }))
-//     }
-// }
-//
-// export const initShiftIn = function(tx) {
-//     const { amount, renBtcAddress, params, ethSig } = tx
-//     const {
-//         sdk,
-//         web3,
-//         walletAddress,
-//         adapterAddress
-//     } = this.props.store.getState()
-//
-//     const data = {
-//         // Send BTC from the Bitcoin blockchain to the Ethereum blockchain.
-//         sendToken: RenSDK.Tokens.BTC.Btc2Eth,
-//
-//         // Amount of BTC we are sending (in Satoshis)
-//         sendAmount: Math.floor(amount * (10 ** 8)), // Convert to Satoshis
-//
-//         // The contract we want to interact with
-//         sendTo: adapterAddress,
-//
-//         // The name of the function we want to call
-//         contractFn: "deposit",
-//
-//         // Arguments expected for calling `deposit`
-//         contractParams: [
-//             {
-//                 name: "_msg",
-//                 type: "bytes",
-//                 value: web3.utils.fromAscii(`Depositing ${amount} BTC`),
-//             }
-//         ],
-//
-//         nonce: params && params.nonce ? params.nonce : RenSDK.utils.randomNonce()
-//     }
-//
-//     const shiftIn = sdk.shiftIn(data)
-//
-//     return shiftIn
-// }
-//
-// export const initShiftOut = async function(tx) {
-//     const { txHash } = tx
-//     const { sdk, web3 } = this.props.store.getState()
-//
-//     const shiftOut = await sdk.shiftOut({
-//         // Send BTC from the Ethereum blockchain to the Bitcoin blockchain.
-//         // This is the reverse of shiftIn.
-//         sendToken: RenSDK.Tokens.BTC.Eth2Btc,
-//
-//         // The web3 provider to talk to Ethereum
-//         web3Provider: web3.currentProvider,
-//
-//         // The transaction hash of our contract call
-//         txHash,
-//     }).readFromEthereum();
-//
-//     return shiftOut
-// }
-//
-// export const initDeposit = async function(tx) {
-//     const { store }  = this.props
-//     const web3 = store.get('web3')
-//     const { params, awaiting, renResponse, renSignature, error } = tx
-//
-//     // completed
-//     if (!awaiting) return
-//
-//     // clear error when re-attempting
-//     if (error) {
-//         updateTx(store, Object.assign(tx, { error: false }))
-//     }
-//
-//     // ren already exposed a signature
-//     if (renResponse && renSignature) {
-//         completeDeposit.bind(this)(tx)
-//     } else {
-//         // create or re-create shift in
-//         const shiftIn = await initShiftIn.bind(this)(tx)
-//
-//         if (!params) {
-//             addTx(store, Object.assign(tx, {
-//                 params: shiftIn.params,
-//                 renBtcAddress: shiftIn.addr()
-//             }))
-//         }
-//
-//         // console.log('initDeposit shiftIn', shiftIn, error)
-//
-//
-//         // wait for btc
-//         const deposit = await shiftIn.waitForDeposit(2);
-//
-//         // store message id
-//
-//         updateTx(store, Object.assign(tx, { awaiting: 'ren-settle' }))
-//         // console.log('initDeposit deposit', deposit)
-//
-//         // TO-DO: check if the user has gas before proceeding
-//         // get signature from RenVM
-//         try {
-//             setWindowBlocker()
-//
-//             const signature = await deposit.submitToRenVM();
-//             updateTx(store, Object.assign(tx, {
-//                 renResponse: signature.response,
-//                 renSignature: signature.signature
-//             }))
-//
-//             // console.log('initDeposit sig', signature)
-//             removeWindowBlocker()
-//
-//             completeDeposit.bind(this)(tx)
-//         } catch(e) {
-//             removeWindowBlocker()
-//
-//             // // submit to renvm failed, recover using message id
-//             // if (e.message && e.message.indexOf('has been seen') > -1) {
-//             //     const split = e.message.split('reason: ')[1]
-//             //     const messageId = split ? split.slice(0, 44) : ''
-//             //     if (!messageId) return
-//             //     const renData = await shiftIn.renVMNetwork.queryShiftIn(messageId)
-//             //     // console.log('renData', renData)
-//             //
-//             //     // TO-DO: populate tx with renData
-//             // }
-//         }
-//     }
-// }
+export const txExists = function(tx) {
+    return getStore().get('convert.transactions').filter(t => t.id === tx.id).length > 0
+}
 
 export const completeConvertToEthereum = async function(tx) {
     const store = getStore()
@@ -273,7 +122,8 @@ export const completeConvertToEthereum = async function(tx) {
 
     console.log('completeDeposit', renResponse, tx, adapterContract)
 
-    const utxoAmount = Number(renResponse.in.utxo.amount)
+    // const utxoAmount = Number(renResponse.in.utxo.amount)
+    const utxoAmount = renResponse.autogen.amount
 
     try {
         let result
@@ -334,20 +184,41 @@ export const initMint = function(tx) {
     // store data or update params with nonce
     const data = {
         sendToken: RenJS.Tokens.BTC.Btc2Eth,
-        sendAmount: RenJS.utils.value(amount, "btc").sats(), // Convert to Satoshis
+        suggestedAmount: RenJS.utils.value(amount, "btc").sats().toNumber(), // Convert to Satoshis
         sendTo: adapterAddress,
         contractFn,
         contractParams,
         nonce: params && params.nonce ? params.nonce : RenJS.utils.randomNonce(),
     }
 
-    console.log(data, tx)
+    console.log('init mint', data, tx)
 
     const mint = sdk.lockAndMint(data)
 
-    // window.shiftIns.push(mint)
-
     return mint
+}
+
+export const initBurn = async function(tx) {
+    // const { txHash } = tx
+    // const { sdk, localWeb3 } = getStore().getState()
+    //
+    // const adapter = new localWeb3.eth.Contract(curveABI, CURVE_TEST)
+    //
+    // const burn = await sdk.burnAndRelease({
+    //     // Send BTC from the Ethereum blockchain to the Bitcoin blockchain.
+    //     // This is the reverse of shiftIn.
+    //     sendToken: RenJS.Tokens.BTC.Eth2Btc,
+    //
+    //     // The web3 provider to talk to Ethereum
+    //     web3Provider: localWeb3.currentProvider,
+    //
+    //     // The transaction hash of our contract call
+    //     ethTxHash: txHash,
+    // }).readFromEthereum();
+    //
+    // console.log(burn)
+    //
+    // return burn
 }
 
 export const initConvertToEthereum = async function(tx) {
@@ -388,7 +259,7 @@ export const initConvertToEthereum = async function(tx) {
         if (!params) {
             addTx(store, Object.assign(tx, {
                 params: mint.params,
-                renBtcAddress: mint.addr()
+                renBtcAddress: mint.gatewayAddress()
             }))
         }
 
@@ -430,56 +301,57 @@ export const initConvertToEthereum = async function(tx) {
 }
 
 export const initConvertFromEthereum = async function(tx) {
-    // const { store } = this.props
-    // const web3 = store.get('web3')
+    const store = getStore()
+    const web3 = store.get('localWeb3')
     // const btcShifterAddress = store.get('btcShifterAddress')
-    // const walletAddress = store.get('walletAddress')
-    // const { id, awaiting, amount, destAddress, txHash } = tx
-    //
-    // const from = walletAddress;
-    // const btcShifterContract = new web3.eth.Contract(shifterABI, btcShifterAddress);
-    //
-    // if (!txExists.bind(this)(tx)) {
-    //     addTx(store, tx)
-    // } else if (tx.error) {
-    //     // clear error when re-attempting
-    //     updateTx(store, Object.assign(tx, { error: false }))
-    // }
-    //
-    // // console.log('initWithdraw', tx, btcShifterAddress)
-    //
-    // // call burn on shifter contract
-    // let shiftOut
+    const walletAddress = store.get('localWeb3Address')
+    const { id, awaiting, amount, destAddress, txHash } = tx
+
+    const from = walletAddress;
+    const adapter = new web3.eth.Contract(adapterABI, ADAPTER_TEST);
+
+    if (!txExists.bind(this)(tx)) {
+        addTx(store, tx)
+    } else if (tx.error) {
+        // clear error when re-attempting
+        updateTx(store, Object.assign(tx, { error: false }))
+    }
+
+    console.log('initWithdraw', tx)
+
+    // call burn on shifter contract
+    // let burn
     // if (!txHash) {
-    //     try {
-    //         const result = await btcShifterContract.methods.shiftOut(
-    //             // web3.utils.fromAscii(`Withdrawing ${amount} BTC`), // _msg
-    //             RenSDK.Tokens.BTC.addressToHex(destAddress), //_to
-    //             Math.floor(amount * (10 ** 8)), // _amount in Satoshis
-    //         ).send({ from })
-    //
-    //         // console.log(result)
-    //
-    //         updateTx(store, Object.assign(tx, { awaiting: 'eth-settle', txHash }))
-    //         shiftOut = await initShiftOut.bind(this)(Object.assign(tx, { txHash: result.transactionHash }))
-    //     } catch(e) {
-    //         // console.log('eth burn error', e)
-    //         updateTx(store, Object.assign(tx, { error: true }))
-    //         return
-    //     }
+        // updateTx(store, Object.assign(tx, { awaiting: 'eth-settle' }))
+        try {
+            const result = await adapter.methods.swapThenBurn(
+                RenJS.utils.BTC.addressToHex(destAddress), //_to
+                RenJS.utils.value(amount, "btc").sats(), // _amount in Satoshis
+                0
+            ).send({ from })
+
+            // console.log(result)
+
+            updateTx(store, Object.assign(tx, { awaiting: '', txHash: result.transactionHash }))
+            // burn = await initBurn.bind(this)(Object.assign(tx, { txHash: result.transactionHash }))
+        } catch(e) {
+            console.log('eth burn error', e)
+            updateTx(store, Object.assign(tx, { error: true }))
+            return
+        }
     // } else {
-    //     shiftOut = await initShiftOut.bind(this)(tx)
+    //     burn = await initBurn.bind(this)(tx)
     // }
-    //
-    // // console.log('initWithdraw', shiftOut)
-    //
+
+    // console.log('initWithdraw', burn)
+
     // updateTx(store, Object.assign(tx, { awaiting: 'ren-settle' }))
-    //
-    // // submit to RenVM
+
+    // submit to RenVM
     // try {
     //     setWindowBlocker()
     //
-    //     const out = await shiftOut.submitToRenVM();
+    //     const out = await burn.submitToRenVM();
     //     // console.log('initWithdraw', out)
     //     updateTx(store, Object.assign(tx, { awaiting: '', renTx: out }))
     //
@@ -522,6 +394,32 @@ export const initTransfer = async function() {
     // }
 }
 
+export const gatherFeeData = async function() {
+    const store = getStore()
+    const localWeb3 = store.get('localWeb3')
+    const amount = store.get('convert.amount')
+
+    if (!amount || !localWeb3) return
+
+    const amountInSats = RenJS.utils.value(amount, "btc").sats().toNumber()
+    // console.log(amountInSats.toNumber())
+    const curve = new localWeb3.eth.Contract(curveABI, CURVE_TEST)
+    try {
+        const swapResult = await curve.methods.get_dy(0, 1, amountInSats).call()
+        const exchangeRate = Number(swapResult / amountInSats).toFixed(4)
+        const fee = (Number(amount) * 0.001).toFixed(8)
+        const total = Number((swapResult / (10 ** 8))-fee).toFixed(8)
+
+        store.set('convert.exchangeRate', exchangeRate)
+        store.set('convert.networkFee', fee)
+        store.set('convert.conversionTotal', total)
+
+        console.log('swapResult', swapResult, exchangeRate, fee, total)
+    } catch(e) {
+        console.log(e)
+    }
+}
+
 export const initMonitoring = function() {
     const store = getStore()
     const network = store.get('selectedNetwork')
@@ -532,9 +430,12 @@ export const initMonitoring = function() {
     console.log('initMonitoring', store.getState())
 
     txs.map(tx => {
+        if (tx.sourceNetwork === 'bitcoin') {
+            initConvertToEthereum.bind(this)(tx)
+        }
         // if (tx.awaiting && !tx.instant) {
             // if (pending.indexOf(tx.id) < 0) {
-                initConvertToEthereum.bind(this)(tx)
+
             // }
         // }
     })

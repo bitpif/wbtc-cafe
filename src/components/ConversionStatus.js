@@ -13,7 +13,7 @@ const ConversionStatus = function(props) {
     } = props
 
     return <React.Fragment>
-            <Typography variant='caption'>
+            {tx.destNetwork === 'ethereum' ? <Typography variant='caption'>
                 {tx.awaiting === 'btc-init' ? <span>
                     {`Waiting for BTC sent to`} {`${tx.renBtcAddress}`}
                 </span> : null}
@@ -24,10 +24,18 @@ const ConversionStatus = function(props) {
                     {`Submitting to RenVM`}
                 </span> : null}
                 {tx.awaiting === 'eth-settle' ? <span>
-                    {`Submitting to Ethereum`}
+                    {tx.error ? `Awaiting submit to Ethereum` : `Submitting to Ethereum`}
                 </span> : null}
-                {!tx.awaiting ? <span>{`Conversion complete`}</span> : null}
-            </Typography>
+                {!tx.awaiting ? <span>{`Complete`}</span> : null}
+            </Typography> : <Typography variant='caption'>
+                {tx.awaiting === 'eth-settle' ? <span>
+                    {tx.error ? `Awaiting submit to Ethereum` : `Submitting to Ethereum`}
+                </span> : null}
+                {tx.awaiting === 'ren-settle' ? <span>
+                    {`Submitting to RenVM`}
+                </span> : null}
+                {!tx.awaiting ? <span>{`Complete`}</span> : null}
+            </Typography>}
     </React.Fragment>
 }
 

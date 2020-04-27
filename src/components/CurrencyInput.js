@@ -99,7 +99,7 @@ class CurrencyInput extends React.Component {
         return <TextField
             id=""
             className={classes.amountField}
-            placeholder='0.00000000'
+            placeholder='Convert Amount'
             margin="dense"
             variant="outlined"
             onChange={(event) => {
@@ -151,7 +151,7 @@ class CurrencyInput extends React.Component {
                         </MenuItem>)}
                         </Select>*/}
                     </InputAdornment> : <InputAdornment className={classes.endAdornment} position="end">{<div className={classes.item}>
-                        {/*<img src={MINI_ICON_MAP[items[0].toLowerCase()]} className={classes.icon} />*/}
+                        {<img src={MINI_ICON_MAP[items[0].toLowerCase()]} className={classes.icon} />}
                         <span>{items[0]}</span>
                     </div>}
                 </InputAdornment>

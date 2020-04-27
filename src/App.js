@@ -21,7 +21,7 @@ import TransactionsTableContainer from './containers/TransactionsTableContainer'
 
 
 
-import { initBrowserWallet } from './utils/walletUtils'
+import { initBrowserWallet, updateAllowance } from './utils/walletUtils'
 
 import logo from './logo.svg';
 // import BitcoinIcon from './bitcoin-simple.svg';
@@ -124,17 +124,18 @@ const styles = () => ({
     paddingTop: theme.spacing(3.5)
   },
   contentContainer: {
-    borderLeft: '0.5px solid ' + theme.palette.divider,
-    borderRight: '0.5px solid ' + theme.palette.divider
+    paddingTop: theme.spacing(3)
+    // borderLeft: '0.5px solid ' + theme.palette.divider,
+    // borderRight: '0.5px solid ' + theme.palette.divider
   },
   footerContainer: {
-    borderTop: '0.5px solid ' + theme.palette.divider,
+    // borderTop: '0.5px solid ' + theme.palette.divider,
     paddingTop: theme.spacing(3),
     paddingBottom: theme.spacing(3),
     fontSize: 10
   },
   transfersContainer: {
-    borderTop: '0.5px solid ' + theme.palette.divider,
+    // borderTop: '0.5px solid ' + theme.palette.divider,
     padding: theme.spacing(3)
   },
 })
@@ -191,9 +192,11 @@ const initialState = {
 
     // conversions
     'convert.adapterAddress': ADAPTER_TEST,
+    'convert.adapterWbtcAllowance': '',
+    'convert.adapterWbtcAllowanceRequesting': '',
     'convert.transactions': [],
     'convert.pendingConvertToEthereum': [],
-    'convert.selectedFormat': 'renbtc',
+    'convert.selectedFormat': 'wbtc',
     'convert.selectedDirection': 0,
     'convert.amount': '',
     'convert.destination': '',
@@ -221,6 +224,14 @@ class AppWrapper extends React.Component {
         const localItems = localStorage.getItem('convert.transactions')
         const transactions = localItems ? JSON.parse(localItems) : []
         store.set('convert.transactions', transactions)
+        this.watchWalletData()
+    }
+
+    async watchWalletData() {
+        await updateAllowance();
+        setInterval(async () => {
+            await updateAllowance();
+        }, 10 * 1000);
     }
 
     render() {
@@ -234,16 +245,16 @@ class AppWrapper extends React.Component {
                 <CancelModalContainer />
                 <NavContainer />
                   <Container size='lg'>
-                    <Grid container className={classes.contentContainer}>
-                      <Grid item sm={12} md={4}>
+                    <Grid container className={classes.contentContainer} spacing={2}>
+                      <Grid item xs={12} sm={12} md={4}>
                         <AboutModalContainer />
                         <BalanceContainer />
-                        <Grid item xs={12}>
-                            <AssetChooserContainer />
-                            <TransferContainer />
-                        </Grid>
+                        <TransferContainer />
                       </Grid>
-                      <Grid item sm={12} md={8} className={classes.chartContainer}>
+                      <Grid item xs={12} sm={12} md={8} className={classes.transfersContainer}>
+                        <TransactionsTableContainer />
+                      </Grid>
+                      {/*<Grid item sm={12} md={8} className={classes.chartContainer}>
                         <Typography variant='subtitle1'><b>Circulating Supply</b></Typography>
                         {<Query
                           query={TRANSACTIONS_QUERY}
@@ -261,17 +272,14 @@ class AppWrapper extends React.Component {
                             )
                           }}
                         </Query>}
-                      </Grid>
-                      <Grid item sm={12} className={classes.transfersContainer}>
-                        <TransactionsTableContainer />
-                      </Grid>
+                      </Grid>*/}
                     </Grid>
                 </Container>
                 <Grid container className={classes.footerContainer}>
                   <Container size='lg'>
                     <Grid container>
                       <Grid item xs={12}>
-                        <Typography variant='caption'>Copyright © Interops 2020</Typography>
+                        {/*<Typography variant='caption'>Copyright © Interops 2020</Typography>*/}
                       </Grid>
                     </Grid>
                   </Container>

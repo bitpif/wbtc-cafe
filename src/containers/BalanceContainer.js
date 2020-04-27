@@ -7,7 +7,7 @@ import RenSDK from "@renproject/ren";
 import { createTransaction, submitToEthereum } from '../utils/renUtils'
 import { ZBTC_MAIN } from '../utils/web3Utils'
 import { updateBalance, initBrowserWallet, NAME_MAP, SYMBOL_MAP, MINI_ICON_MAP } from '../utils/walletUtils'
-import zbtcABI from "../utils/zbtcABI.json";
+import zbtcABI from "../utils/erc20ABI.json";
 import Web3 from "web3";
 import EthCrypto from 'eth-crypto'
 import Box from '3box';
