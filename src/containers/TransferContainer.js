@@ -199,7 +199,11 @@ class TransferContainer extends React.Component {
             txHash: ''
         }
 
-        initConvertToEthereum(tx)
+        // initConvertToEthereum(tx)
+
+        store.set('depositModalTx', tx)
+        store.set('showDepositModal', true)
+
 
     }
 
@@ -385,15 +389,15 @@ class TransferContainer extends React.Component {
                                     <Grid item xs={12} className={classes.lineItem}>
                                         <Grid container justify='space-between'>
                                             <span>Exchange Rate</span>
-                                            <span className={classes.amt}>{exchangeRate ? `1 ${sourceAsset} = ${exchangeRate} ${destAsset}` : '-'} </span>
+                                            <span className={classes.amt}>{exchangeRate && amount ? `1 ${sourceAsset} = ${exchangeRate} ${destAsset}` : '-'} </span>
                                         </Grid>
                                         <Grid container justify='space-between'>
-                                            <span>Conversion Fee</span>
-                                            <span className={classes.amt}>{fee ? `${fee} BTC` : '-'}</span>
+                                            <span>RenVM Network Fee</span>
+                                            <span className={classes.amt}>{fee && amount ? `${fee} BTC` : '-'}</span>
                                         </Grid>
                                         <Grid container justify='space-between'>
                                             <span>Total</span>
-                                            <span className={classes.amt}>{total ? `~${total} ${destAsset}` : '-'}</span>
+                                            <span className={classes.amt}>{total && amount ? `~${total} ${destAsset}` : '-'}</span>
                                         </Grid>
                                     </Grid>
                                 </Grid>
@@ -470,7 +474,7 @@ class TransferContainer extends React.Component {
                                             store.set('showCancelModal', true)
                                             store.set('cancelModalTx', tx)
                                         } else {
-                                            removeTx(this.props.store, tx.id)
+                                            removeTx(tx.id)
                                         }
                                     }}
                                     network={selectedNetwork}

@@ -83,6 +83,7 @@ const styles = () => ({
         display: 'flex',
         alignItems: 'center',
         marginBottom: theme.spacing(2),
+        fontWeight: 'bold'
     },
     arrow: {
         width: 30
@@ -103,6 +104,7 @@ const styles = () => ({
         marginTop: theme.spacing(4),
     },
     snackbar: {
+        boxShadow: 'none',
         backgroundColor: '#fb8c00',
         minWidth: 'auto',
         marginTop: theme.spacing(3),
@@ -163,6 +165,7 @@ const styles = () => ({
     },
     disclosure: {
         // marginTop: theme.spacing(2),
+
         '& span': {
             fontSize: 14
         }
@@ -202,6 +205,9 @@ class DepositModalContainer extends React.Component {
         store.set('showDepositModal', false)
         store.set('depositDisclosureChecked', false)
         store.set('depositModalTx', null)
+
+        store.set('showGatewayModal', true)
+        store.set('gatewayModalTx', depositModalTx)
     }
 
     calcNetAmount() {
@@ -243,6 +249,11 @@ class DepositModalContainer extends React.Component {
 
         // console.log(this.props, this.state)
 
+        const amount = store.get('convert.amount')
+        const exchangeRate = store.get('convert.exchangeRate')
+        const fee = store.get('convert.networkFee')
+        const total = store.get('convert.conversionTotal')
+
         return <Modal
           aria-labelledby="transition-modal-title"
           aria-describedby="transition-modal-description"
@@ -266,7 +277,7 @@ class DepositModalContainer extends React.Component {
                       <Grid item xs={12}>
                           <Grid container>
                               {<Typography variant='subtitle1' className={classes.title}>
-                                Confirm Deposit
+                                Confirm Transaction
                               </Typography>}
 
                               {/*<Typography variant='subtitle1' className={classes.title}>
@@ -287,7 +298,7 @@ class DepositModalContainer extends React.Component {
                                     </Grid>
                                     <Grid item xs={6}>
                                         <Typography variant='body1' className={classes.receiptAmount}>
-                                            {Number(depositModalTx.amount).toFixed(8)} BTC
+                                            {`${amount} BTC`}
                                         </Typography>
                                     </Grid>
                                 </Grid>
@@ -297,12 +308,27 @@ class DepositModalContainer extends React.Component {
                                 <Grid container>
                                     <Grid item xs={6}>
                                          <Typography variant='body1' className={classes.receiptTitle}>
-                                            RenVM fee (0.1%)
+                                            Exchange Rate
                                          </Typography>
                                     </Grid>
                                     <Grid item xs={6}>
                                         <Typography variant='body1' className={classes.receiptAmount}>
-                                            {renFee} BTC
+                                            {`1 BTC = ${exchangeRate} WBTC`}
+                                        </Typography>
+                                    </Grid>
+                                </Grid>
+                              </Grid>
+
+                              <Grid item xs={12}>
+                                <Grid container>
+                                    <Grid item xs={6}>
+                                         <Typography variant='body1' className={classes.receiptTitle}>
+                                            RenVM Network Fee
+                                         </Typography>
+                                    </Grid>
+                                    <Grid item xs={6}>
+                                        <Typography variant='body1' className={classes.receiptAmount}>
+                                            {`${fee} BTC`}
                                         </Typography>
                                     </Grid>
                                 </Grid>
@@ -350,12 +376,12 @@ class DepositModalContainer extends React.Component {
                                 <Grid container>
                                     <Grid item xs={6}>
                                          <Typography variant='body1' className={classes.netTitle}>
-                                            <b>zBTC received</b>
+                                            <b>WBTC received</b>
                                          </Typography>
                                     </Grid>
                                     <Grid item xs={6}>
                                         <Typography variant='body1' className={classes.netAmount}>
-                                            <b>{netAmount} zBTC</b>
+                                            <b>{`~${total} WBTC`}</b>
                                         </Typography>
                                     </Grid>
                                 </Grid>
@@ -389,7 +415,7 @@ class DepositModalContainer extends React.Component {
                                         color="primary"
                                       />
                                     }
-                                    label={<span>Send exactly <b>{depositModalTx.amount} BTC</b> to the address shown. Any other amount will be lost.</span>}
+                                    label={<span>Send <b>{depositModalTx.amount} BTC</b> in <b>1 bitcoin transaction</b> to the address given. Any additional amounts will be lost.</span>}
                                   />
                                 </Grid>}
                               />}
@@ -399,7 +425,7 @@ class DepositModalContainer extends React.Component {
                               </Typography>*/}
 
                               {<Button
-                                  variant="contained"
+                                  variant={depositDisclosureChecked ? "outlined" : 'contained'}
                                   disabled={!depositDisclosureChecked}
                                   size='large'
                                   color="primary"

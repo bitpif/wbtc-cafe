@@ -36,16 +36,19 @@ export const removeWindowBlocker = function() {
     window.removeEventListener('beforeunload', windowBlocker);
 }
 
-export const addTx = (store, tx) => {
-    const storeString = tx.type === 'convert' ? 'convert.transactions' : 'transfer.transactions'
+export const addTx = (tx) => {
+    const store = getStore()
+    const storeString = 'convert.transactions'
     let txs = store.get(storeString)
     txs.push(tx)
     store.set(storeString, txs)
 
-    // const space = store.get('space')
-    // if (space) {
-    //     space.public.set(storeString, JSON.stringify(txs))
-    // }
+    const space = store.get('space')
+    console.log('space', space)
+
+    if (space) {
+        space.public.set(storeString, JSON.stringify(txs))
+    }
 
     // use localStorage
     localStorage.setItem(storeString, JSON.stringify(txs))
@@ -54,8 +57,9 @@ export const addTx = (store, tx) => {
     window.txs = txs
 }
 
-export const updateTx = (store, newTx) => {
-    const storeString = newTx.type === 'convert' ? 'convert.transactions' : 'transfer.transactions'
+export const updateTx = (newTx) => {
+    const store = getStore()
+    const storeString = 'convert.transactions'
     const txs = store.get(storeString).map(t => {
         if (t.id === newTx.id) {
             // const newTx = Object.assign(t, props)
@@ -65,10 +69,10 @@ export const updateTx = (store, newTx) => {
     })
     store.set(storeString, txs)
 
-    // const space = store.get('space')
-    // if (space) {
-    //     space.public.set(storeString, JSON.stringify(txs))
-    // }
+    const space = store.get('space')
+    if (space) {
+        space.public.set(storeString, JSON.stringify(txs))
+    }
 
     // use localStorage
     localStorage.setItem(storeString, JSON.stringify(txs))
@@ -77,16 +81,17 @@ export const updateTx = (store, newTx) => {
     window.txs = txs
 }
 
-export const removeTx = (store, tx) => {
-    const storeString = tx.type === 'convert' ? 'convert.transactions' : 'transfer.transactions'
+export const removeTx = (tx) => {
+    const store = getStore()
+    const storeString = 'convert.transactions'
     let txs = store.get(storeString).filter(t => (t.id !== tx.id))
     // console.log(txs)
     store.set(storeString, txs)
 
-    // const space = store.get('space')
-    // if (space) {
-    //     space.public.set(storeString, JSON.stringify(txs))
-    // }
+    const space = store.get('space')
+    if (space) {
+        space.public.set(storeString, JSON.stringify(txs))
+    }
 
     // use localStorage
     localStorage.setItem(storeString, JSON.stringify(txs))
@@ -118,7 +123,7 @@ export const completeConvertToEthereum = async function(tx) {
     // const gasPrice = await web3Context.lib.eth.getGasPrice()
     // console.log('gasPrice', gasPrice)
 
-    updateTx(store, Object.assign(tx, { awaiting: 'eth-settle' }))
+    updateTx(Object.assign(tx, { awaiting: 'eth-settle' }))
 
     console.log('completeDeposit', renResponse, tx, adapterContract)
 
@@ -139,10 +144,10 @@ export const completeConvertToEthereum = async function(tx) {
             })
         }
         store.set('convert.pendingConvertToEthereum', pending.filter(p => p !== id))
-        updateTx(store, Object.assign(tx, { awaiting: '', txHash: result.transactionHash, error: false }))
+        updateTx(Object.assign(tx, { awaiting: '', txHash: result.transactionHash, error: false }))
     } catch(e) {
         console.log(e)
-        updateTx(store, Object.assign(tx, { error: true }))
+        updateTx(Object.assign(tx, { error: true }))
     }
 }
 
@@ -244,7 +249,7 @@ export const initConvertToEthereum = async function(tx) {
 
     // clear error when re-attempting
     if (error) {
-        updateTx(store, Object.assign(tx, { error: false }))
+        updateTx(Object.assign(tx, { error: false }))
     }
 
     // ren already exposed a signature
@@ -257,7 +262,7 @@ export const initConvertToEthereum = async function(tx) {
         console.log('initConvertToEthereum mint', mint)
 
         if (!params) {
-            addTx(store, Object.assign(tx, {
+            addTx(Object.assign(tx, {
                 params: mint.params,
                 renBtcAddress: mint.gatewayAddress()
             }))
@@ -267,28 +272,31 @@ export const initConvertToEthereum = async function(tx) {
         const deposit = await mint
             .wait(2)
             .on("deposit", dep => {
-                // console.log('on deposit', dep)
+                console.log('on deposit', dep)
                 if (dep.utxo) {
                     if (awaiting === 'btc-init') {
-                        updateTx(store, Object.assign(tx, {
+                        store.set('showGatewayModal', false)
+                        store.set('gatewayModalTx', null)
+
+                        updateTx(Object.assign(tx, {
                             awaiting: 'btc-settle',
                             btcConfirmations: dep.utxo.confirmations,
-                            btcTxHash: dep.utxo.txid
+                            btcTxHash: dep.utxo.txHash
                         }))
                     } else {
-                        updateTx(store, Object.assign(tx, {
+                        updateTx(Object.assign(tx, {
                             btcConfirmations: dep.utxo.confirmations,
-                            btcTxHash: dep.utxo.txid
+                            btcTxHash: dep.utxo.txHash
                         }))
                     }
                 }
             })
 
-        updateTx(store, Object.assign(tx, { awaiting: 'ren-settle' }))
+        updateTx(Object.assign(tx, { awaiting: 'ren-settle' }))
 
         try {
             const signature = await deposit.submit();
-            updateTx(store, Object.assign(tx, {
+            updateTx(Object.assign(tx, {
                 renResponse: signature.renVMResponse,
                 renSignature: signature.signature
             }))
@@ -311,10 +319,10 @@ export const initConvertFromEthereum = async function(tx) {
     const adapter = new web3.eth.Contract(adapterABI, ADAPTER_TEST);
 
     if (!txExists.bind(this)(tx)) {
-        addTx(store, tx)
+        addTx(tx)
     } else if (tx.error) {
         // clear error when re-attempting
-        updateTx(store, Object.assign(tx, { error: false }))
+        updateTx(Object.assign(tx, { error: false }))
     }
 
     console.log('initWithdraw', tx)
@@ -332,11 +340,11 @@ export const initConvertFromEthereum = async function(tx) {
 
             // console.log(result)
 
-            updateTx(store, Object.assign(tx, { awaiting: '', txHash: result.transactionHash }))
+            updateTx(Object.assign(tx, { awaiting: '', txHash: result.transactionHash }))
             // burn = await initBurn.bind(this)(Object.assign(tx, { txHash: result.transactionHash }))
         } catch(e) {
             console.log('eth burn error', e)
-            updateTx(store, Object.assign(tx, { error: true }))
+            updateTx(Object.assign(tx, { error: true }))
             return
         }
     // } else {
@@ -396,14 +404,14 @@ export const initTransfer = async function() {
 
 export const gatherFeeData = async function() {
     const store = getStore()
-    const localWeb3 = store.get('localWeb3')
+    const dataWeb3 = store.get('dataWeb3')
     const amount = store.get('convert.amount')
 
-    if (!amount || !localWeb3) return
+    if (!amount || !dataWeb3) return
 
     const amountInSats = RenJS.utils.value(amount, "btc").sats().toNumber()
     // console.log(amountInSats.toNumber())
-    const curve = new localWeb3.eth.Contract(curveABI, CURVE_TEST)
+    const curve = new dataWeb3.eth.Contract(curveABI, CURVE_TEST)
     try {
         const swapResult = await curve.methods.get_dy(0, 1, amountInSats).call()
         const exchangeRate = Number(swapResult / amountInSats).toFixed(4)

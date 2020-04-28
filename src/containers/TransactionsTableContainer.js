@@ -7,6 +7,7 @@ import RenSDK from "@renproject/ren";
 import { removeTx, initConvertFromEthereum } from '../utils/txUtils'
 import { resetWallet, setNetwork, MINI_ICON_MAP } from '../utils/walletUtils'
 import ConversionStatus from '../components/ConversionStatus';
+import ConversionActions from '../components/ConversionActions';
 
 import Web3 from "web3";
 import EthCrypto from 'eth-crypto'
@@ -39,13 +40,6 @@ const styles = () => ({
         border: '0.5px solid ' + theme.palette.divider,
         minHeight: 200,
         height: '100%'
-    },
-    viewLink: {
-        fontSize: 12,
-        marginRight: theme.spacing(1),
-        textDecoration: 'underline',
-        cursor: 'pointer',
-        // color: '#fff'
     },
     titleWrapper: {
       paddingBottom: theme.spacing(2)
@@ -96,18 +90,9 @@ class TransactionsTableContainer extends React.Component {
                 return <TableRow key={i}>
                   <TableCell align="left"><Typography variant='caption'>{tx.amount} {sourceAsset} → {destAsset}</Typography></TableCell>
                   <TableCell><Typography variant='caption'><ConversionStatus tx={tx} /></Typography></TableCell>
-                  {/*<TableCell align="left"><Typography variant='caption'>01/20/2020</Typography></TableCell>*/}
                   <TableCell>
                       <Grid container justify='flex-end'>
-                        {tx.awaiting === 'btc-init' || tx.error || !tx.awaiting ? <div>
-                          {tx.txHash ? <a className={classes.viewLink} target='_blank' href={'https://' + (tx.destNetworkVersion === 'testnet' ? 'kovan.' : '') + 'etherscan.io/tx/'+tx.txHash}>View transaction</a> : null}
-                          {tx.error && tx.awaiting === 'eth-settle' && <a className={classes.viewLink} onClick={() => {
-                              initConvertFromEthereum(tx)
-                          }}>Submit</a>}
-                          {!tx.error && <a className={classes.viewLink} onClick={() => {
-                              removeTx(store, tx)
-                          }}>{!tx.awaiting ? 'Clear' : 'Cancel'}</a>}
-                        </div> : null}
+                        <ConversionActions tx={tx} />
                       </Grid>
                   </TableCell>
                 </TableRow>

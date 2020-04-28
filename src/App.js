@@ -15,13 +15,12 @@ import SignInContainer from './containers/SignInContainer'
 import DepositModalContainer from './containers/DepositModalContainer'
 import AboutModalContainer from './containers/AboutModalContainer'
 import CancelModalContainer from './containers/CancelModalContainer'
+import ViewGatewayContainer from './containers/ViewGatewayContainer'
 import AssetChooserContainer from './containers/AssetChooserContainer'
 import StackedAreaChart from './components/StackedAreaChart'
 import TransactionsTableContainer from './containers/TransactionsTableContainer'
 
-
-
-import { initBrowserWallet, updateAllowance } from './utils/walletUtils'
+import { initDataWeb3, updateAllowance } from './utils/walletUtils'
 
 import logo from './logo.svg';
 // import BitcoinIcon from './bitcoin-simple.svg';
@@ -51,68 +50,12 @@ import isIncognito from "is-incognito";
 import {
     ZBTC_MAIN,
     ZBTC_TEST,
+    WBTC_TEST,
     ADAPTER_MAIN,
     ADAPTER_TEST,
     BTC_SHIFTER_MAIN,
     BTC_SHIFTER_TEST
 } from './utils/web3Utils'
-
-const client = new ApolloClient({
-  // uri: process.env.REACT_APP_GRAPHQL_ENDPOINT,
-  uri: 'https://api.thegraph.com/subgraphs/name/amcassetti/interop-stats',
-  cache: new InMemoryCache(),
-})
-
-const TRANSACTIONS_QUERY = gql`
-  query days {
-    days(orderBy: _timestamp, orderDirection: asc, first: 1000) {
-      id
-      _wbtc
-      _sbtc
-      _imbtc
-      _timestamp
-    }
-  }
-`
-
-// const TRANSACTIONS_QUERY = gql`
-//   query transactions {
-//     transactions(orderBy: _timestamp, orderDirection: asc, first: 1000) {
-//       id
-//       _asset
-//       _type
-//       _amount
-//       _timestamp
-//     }
-//   }
-// `
-
-function gatherData(data) {
-    let totals = {
-        wBTC: 0,
-        imBTC: 0,
-        sBTC: 0,
-        pBTC: 0,
-        renBTC: 0
-    }
-
-    return data.sort((a,b) => (a._timestamp - b._timestamp))
-      .map(d => {
-          ['wBTC', 'imBTC', 'sBTC', 'pBTC', 'renBTC'].map(k => {
-              const id = '_' + k.toLowerCase()
-              if (!d[id]) {
-                return
-              }
-              const amount = k === 'sBTC' ? Number(d[id]) / 10**18 : Number(d[id]) / 100000000
-              totals[k] = amount
-              d = Object.assign(d, totals)
-          })
-          // // console.log(totals)
-          d._timestamp = Number(d._timestamp)
-          return d
-      })
-}
-
 
 const styles = () => ({
   container: {
@@ -142,26 +85,26 @@ const styles = () => ({
 
 const initialState = {
     // networking
-    zbtcAddress: ZBTC_TEST,
+    wbtcAddress: WBTC_TEST,
     btcShifterAddress: BTC_SHIFTER_TEST,
     adapterAddress: ADAPTER_TEST,
     selectedNetwork: 'testnet',
 
     // wallet
-    walletType: '',
-    walletAddress: '',
-    walletLoading: false,
-    loadingBalances: true,
-    btcBalance: 0,
-    ethBalance: 0,
-    sdk: new RenSDK("testnet"),
-    web3: null,
-    box: null,
-    space: null,
+    // walletType: '',
+    // walletAddress: '',
+    // walletLoading: false,
 
+    dataWeb3: null,
     localWeb3: null,
     localWeb3Address: '',
     localWeb3Network: '',
+    box: null,
+    space: null,
+    loadingBalances: true,
+    wbtcBalance: 0,
+    ethBalance: 0,
+    sdk: new RenSDK("testnet"),
 
     // navigation
     selectedTab: 1,
@@ -175,7 +118,8 @@ const initialState = {
     depositDisclosureChecked: false,
     showCancelModal: false,
     cancelModalTx: null,
-    btcTxFeeEstimate: '',
+    showGatewayModal: false,
+    gatewayModalTx: null,
     showAboutModal: false,
 
     // transfers
@@ -219,11 +163,13 @@ class AppWrapper extends React.Component {
     }
 
     async componentDidMount() {
-        // recover transactions from local storage
-        const store = this.props.store
-        const localItems = localStorage.getItem('convert.transactions')
-        const transactions = localItems ? JSON.parse(localItems) : []
-        store.set('convert.transactions', transactions)
+        // // recover transactions from local storage
+        // const store = this.props.store
+        // const localItems = localStorage.getItem('convert.transactions')
+        // const transactions = localItems ? JSON.parse(localItems) : []
+        // store.set('convert.transactions', transactions)
+
+        initDataWeb3()
         this.watchWalletData()
     }
 
@@ -243,6 +189,7 @@ class AppWrapper extends React.Component {
                 <SignInContainer />
                 <DepositModalContainer />
                 <CancelModalContainer />
+                <ViewGatewayContainer />
                 <NavContainer />
                   <Container size='lg'>
                     <Grid container className={classes.contentContainer} spacing={2}>
@@ -254,32 +201,13 @@ class AppWrapper extends React.Component {
                       <Grid item xs={12} sm={12} md={8} className={classes.transfersContainer}>
                         <TransactionsTableContainer />
                       </Grid>
-                      {/*<Grid item sm={12} md={8} className={classes.chartContainer}>
-                        <Typography variant='subtitle1'><b>Circulating Supply</b></Typography>
-                        {<Query
-                          query={TRANSACTIONS_QUERY}
-                          variables={{
-                          }}
-                        >
-                          {({ data, error, loading }) => {
-                            // console.log('Query result', data, error, loading)
-                            return loading ? (
-                              <span></span>
-                            ) : error ? (
-                              <span>Error</span>
-                            ) : (
-                              <StackedAreaChart data={gatherData(data.days)} />
-                            )
-                          }}
-                        </Query>}
-                      </Grid>*/}
                     </Grid>
                 </Container>
                 <Grid container className={classes.footerContainer}>
                   <Container size='lg'>
                     <Grid container>
                       <Grid item xs={12}>
-                        {/*<Typography variant='caption'>Copyright © Interops 2020</Typography>*/}
+                        {/*<Typography variant='caption'>Copyright © WBTC Cafe 2020</Typography>*/}
                       </Grid>
                     </Grid>
                   </Container>
@@ -299,9 +227,7 @@ class App extends React.Component {
     render() {
         const { classes } = this.props
         return (
-            <ApolloProvider client={client}>
-                <AppWrapperComponent classes={classes}/>
-            </ApolloProvider>
+            <AppWrapperComponent classes={classes}/>
         );
     }
 }

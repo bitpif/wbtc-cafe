@@ -103,25 +103,30 @@ export const setWbtcAllowance = async function() {
 export const updateBalance = async function() {
     const store = this.props.store
 
-    const web3 = store.get('web3')
-    const walletAddress = store.get('walletAddress')
-    const zbtcAddress = store.get('zbtcAddress')
+    const web3 = store.get('localWeb3')
+    const walletAddress = store.get('localWeb3Address')
+    const wbtcAddress = store.get('wbtcAddress')
 
     if (!web3 || !walletAddress) {
         return
     }
 
-    const contract = new web3.eth.Contract(erc20ABI, zbtcAddress);
+    const contract = new web3.eth.Contract(erc20ABI, wbtcAddress);
     const balance = await contract.methods.balanceOf(walletAddress).call();
     const ethBal = await web3.eth.getBalance(walletAddress);
 
     // console.log('update balance', balance, ethBal)
-
-    if (!ethBal) return
+    // if (!ethBal) return
 
     store.set('ethBalance', Number(web3.utils.fromWei(ethBal)).toFixed(8))
-    store.set('btcBalance', parseInt(balance.toString()) / 10 ** 8)
+    store.set('wbtcBalance', parseInt(balance.toString()) / 10 ** 8)
     store.set('loadingBalances', false)
+}
+
+export const initDataWeb3 = async function() {
+   const store = getStore()
+   const network = store.get('selectedNetwork')
+   store.set('dataWeb3', new Web3(`https://${network === 'testnet' ? 'kovan' : 'mainnet'}.infura.io/v3/7be66f167c2e4a05981e2ffc4653dec2`))
 }
 
 export const initLocalWeb3 = async function() {
@@ -186,13 +191,15 @@ export const initLocalWeb3 = async function() {
         })
     }
 
-    // // recover transactions from 3box
-    // const box = await Box.openBox(accounts[0], web3.currentProvider)
-    // const space = await box.openSpace("interops")
-    // const txData = await space.public.get('convert.transactions')
-    // const transactions = txData ? JSON.parse(txData) : []
-    // store.set('convert.transactions', transactions)
-    // window.space = space
+    // recover transactions from 3box
+    const box = await Box.openBox(accounts[0], web3.currentProvider)
+    const space = await box.openSpace("wbtc-cafe")
+    const txData = await space.public.get('convert.transactions')
+    console.log('txData', txData)
+    const transactions = txData ? JSON.parse(txData) : []
+    store.set('convert.transactions', transactions)
+    store.set('space', space)
+    window.space = space
 
     return
 }
@@ -206,8 +213,6 @@ export const resetWallet = async function() {
     store.set('walletLoading', false)
     store.set('transactions', [])
 }
-
-
 
 export const setNetwork = async function(network) {
     const {
