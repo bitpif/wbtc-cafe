@@ -16,6 +16,7 @@ import DepositModalContainer from './containers/DepositModalContainer'
 import AboutModalContainer from './containers/AboutModalContainer'
 import CancelModalContainer from './containers/CancelModalContainer'
 import ViewGatewayContainer from './containers/ViewGatewayContainer'
+import NetworkModalContainer from './containers/NetworkModalContainer'
 import AssetChooserContainer from './containers/AssetChooserContainer'
 import StackedAreaChart from './components/StackedAreaChart'
 import TransactionsTableContainer from './containers/TransactionsTableContainer'
@@ -101,6 +102,7 @@ const initialState = {
     localWeb3Network: '',
     box: null,
     space: null,
+    spaceError: false,
     loadingBalances: true,
     wbtcBalance: 0,
     ethBalance: 0,
@@ -190,6 +192,7 @@ class AppWrapper extends React.Component {
                 <DepositModalContainer />
                 <CancelModalContainer />
                 <ViewGatewayContainer />
+                <NetworkModalContainer />
                 <NavContainer />
                   <Container size='lg'>
                     <Grid container className={classes.contentContainer} spacing={2}>

@@ -235,6 +235,8 @@ export const initConvertToEthereum = async function(tx) {
         renResponse,
         renSignature,
         error,
+        btcTxHash,
+        btcTxVOut
     } = tx
 
     const pending = store.get('convert.pendingConvertToEthereum')
@@ -269,28 +271,40 @@ export const initConvertToEthereum = async function(tx) {
         }
 
         // wait for btc
-        const deposit = await mint
-            .wait(2)
-            .on("deposit", dep => {
-                console.log('on deposit', dep)
-                if (dep.utxo) {
-                    if (awaiting === 'btc-init') {
-                        store.set('showGatewayModal', false)
-                        store.set('gatewayModalTx', null)
-
-                        updateTx(Object.assign(tx, {
-                            awaiting: 'btc-settle',
-                            btcConfirmations: dep.utxo.confirmations,
-                            btcTxHash: dep.utxo.txHash
-                        }))
-                    } else {
-                        updateTx(Object.assign(tx, {
-                            btcConfirmations: dep.utxo.confirmations,
-                            btcTxHash: dep.utxo.txHash
-                        }))
-                    }
-                }
+        let deposit
+        if (awaiting === 'ren-settle' && btcTxHash && String(btcTxVOut) !== 'undefined') {
+            deposit = await mint.wait(2, {
+                txHash: btcTxHash,
+                vOut: btcTxVOut
             })
+        } else {
+            deposit = await mint
+                .wait(2)
+                .on("deposit", dep => {
+                    console.log('on deposit', dep)
+                    if (dep.utxo) {
+                        if (awaiting === 'btc-init') {
+                            store.set('showGatewayModal', false)
+                            store.set('gatewayModalTx', null)
+
+                            updateTx(Object.assign(tx, {
+                                awaiting: 'btc-settle',
+                                btcConfirmations: dep.utxo.confirmations,
+                                btcTxHash: dep.utxo.txHash,
+                                btcTxVOut: dep.utxo.vOut
+                            }))
+                        } else {
+                            updateTx(Object.assign(tx, {
+                                btcConfirmations: dep.utxo.confirmations,
+                                btcTxHash: dep.utxo.txHash,
+                                btcTxVOut: dep.utxo.vOut
+                            }))
+                        }
+                    }
+                })
+        }
+
+        console.log('deposit', deposit)
 
         updateTx(Object.assign(tx, { awaiting: 'ren-settle' }))
 
@@ -303,7 +317,7 @@ export const initConvertToEthereum = async function(tx) {
 
             completeConvertToEthereum.bind(this)(tx)
         } catch(e) {
-            console.log(e)
+            console.log('renvm submit error', e)
         }
     }
 }
@@ -334,7 +348,7 @@ export const initConvertFromEthereum = async function(tx) {
         try {
             const result = await adapter.methods.swapThenBurn(
                 RenJS.utils.BTC.addressToHex(destAddress), //_to
-                RenJS.utils.value(amount, "btc").sats(), // _amount in Satoshis
+                RenJS.utils.value(amount, "btc").sats().toNumber(), // _amount in Satoshis
                 0
             ).send({ from })
 

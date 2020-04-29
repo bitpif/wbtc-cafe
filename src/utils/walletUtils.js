@@ -76,7 +76,7 @@ export const updateAllowance = async function() {
     const contract = new web3.eth.Contract(erc20ABI, WBTC_TEST);
     const allowance = await contract.methods.allowance(walletAddress, ADAPTER_TEST).call();
 
-    console.log(allowance)
+    console.log('allowance', allowance)
 
     store.set('convert.adapterWbtcAllowance', Number(web3.utils.fromWei(allowance)).toFixed(8))
 }
@@ -89,7 +89,7 @@ export const setWbtcAllowance = async function() {
     const contract = new web3.eth.Contract(erc20ABI, WBTC_TEST)
     store.set('convert.adapterWbtcAllowanceRequesting', true)
     try {
-        await contract.methods.approve(ADAPTER_TEST, web3.utils.toWei('1000000')).send({
+        await contract.methods.approve(ADAPTER_TEST, web3.utils.toWei('1000000000000000000')).send({
             from: walletAddress
         })
         updateAllowance();
@@ -131,6 +131,7 @@ export const initDataWeb3 = async function() {
 
 export const initLocalWeb3 = async function() {
     const store = getStore()
+    store.set('spaceError', false)
 
     const providerOptions = {
         authereum: {
@@ -169,6 +170,8 @@ export const initLocalWeb3 = async function() {
     let network = ''
     if (web3.currentProvider.networkVersion === '1') {
         network = 'mainnet'
+        store.set('showNetworkModal', true)
+        return
     } else if (web3.currentProvider.networkVersion === '42') {
         network = 'testnet'
     }
@@ -177,29 +180,33 @@ export const initLocalWeb3 = async function() {
     store.set('localWeb3Address', accounts[0])
     store.set('localWeb3Network', network)
 
-    if (network === 'testnet') {
-        // updateWalletData.bind(this)()
-        updateAllowance()
-        gatherFeeData()
-        initMonitoring()
-    }
+    try {
+        // recover transactions from 3box
+        const box = await Box.openBox(accounts[0], web3.currentProvider)
+        const space = await box.openSpace("wbtc-cafe")
+        const txData = await space.public.get('convert.transactions')
+        console.log('txData', txData)
+        const transactions = txData ? JSON.parse(txData) : []
+        store.set('convert.transactions', transactions)
+        store.set('space', space)
+        window.space = space
 
-    if (window.ethereum) {
-        window.ethereum.on('accountsChanged', function (accounts) {
-            store.set('localWeb3Address', accounts[0])
+        if (network === 'testnet') {
+            // updateWalletData.bind(this)()
             updateAllowance()
-        })
-    }
+            gatherFeeData()
+            initMonitoring()
+        }
 
-    // recover transactions from 3box
-    const box = await Box.openBox(accounts[0], web3.currentProvider)
-    const space = await box.openSpace("wbtc-cafe")
-    const txData = await space.public.get('convert.transactions')
-    console.log('txData', txData)
-    const transactions = txData ? JSON.parse(txData) : []
-    store.set('convert.transactions', transactions)
-    store.set('space', space)
-    window.space = space
+        if (window.ethereum) {
+            window.ethereum.on('accountsChanged', function (accounts) {
+                store.set('localWeb3Address', accounts[0])
+                updateAllowance()
+            })
+        }
+    } catch(e) {
+        store.set('spaceError', true)
+    }
 
     return
 }
@@ -240,6 +247,8 @@ export const setAddresses = async function() {
         store.set('adapterAddress', ADAPTER_MAIN)
     }
 }
+
+window.setWbtcAllowance = setWbtcAllowance
 
 export default {
     resetWallet,

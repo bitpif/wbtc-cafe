@@ -5,9 +5,11 @@ import theme from '../theme/theme'
 import classNames from 'classnames'
 import RenSDK from "@renproject/ren";
 import { removeTx, initConvertFromEthereum } from '../utils/txUtils'
-import { resetWallet, setNetwork, MINI_ICON_MAP } from '../utils/walletUtils'
+import { initLocalWeb3, resetWallet, setNetwork, MINI_ICON_MAP } from '../utils/walletUtils'
 import ConversionStatus from '../components/ConversionStatus';
 import ConversionActions from '../components/ConversionActions';
+import ActionLink from '../components/ActionLink';
+
 
 import Web3 from "web3";
 import EthCrypto from 'eth-crypto'
@@ -46,6 +48,12 @@ const styles = () => ({
     },
     actionsCell: {
       minWidth: 150
+    },
+    emptyMessage: {
+      display: 'flex',
+      paddingTop: theme.spacing(8),
+      justifyContent: 'center',
+      height: '100%'
     }
 })
 
@@ -69,6 +77,9 @@ class TransactionsTableContainer extends React.Component {
         } = this.props
 
         const transactions = store.get('convert.transactions')
+        const localWeb3Address = store.get('localWeb3Address')
+        const space = store.get('space')
+        const spaceError = store.get('spaceError')
 
         return <div className={classes.container}>
           {/*<div className={classes.titleWrapper}>
@@ -84,7 +95,7 @@ class TransactionsTableContainer extends React.Component {
               </TableRow>
             </TableHead>
             <TableBody>
-              {transactions.map((tx, i) => {
+              {localWeb3Address && space && transactions.map((tx, i) => {
                 const destAsset = tx.destAsset.toUpperCase()
                 const sourceAsset = tx.sourceAsset.toUpperCase()
                 return <TableRow key={i}>
@@ -99,6 +110,15 @@ class TransactionsTableContainer extends React.Component {
               })}
             </TableBody>
           </Table>
+          {!localWeb3Address && <div className={classes.emptyMessage}>
+              <Typography variant='caption'>Please <ActionLink onClick={initLocalWeb3}>connect wallet</ActionLink> to view transactions</Typography>
+          </div>}
+          {localWeb3Address && !space && <div className={classes.emptyMessage}>
+              {spaceError ? <Typography variant='caption'>Connection to 3box failed. <ActionLink onClick={initLocalWeb3}>Retry</ActionLink></Typography> : <Typography variant='caption'>Loading transactions...</Typography>}
+          </div>}
+          {localWeb3Address && space && !transactions.length && <div className={classes.emptyMessage}>
+              <Typography variant='caption'>No transactions</Typography>
+          </div>}
         </div>
     }
 }

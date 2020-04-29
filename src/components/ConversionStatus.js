@@ -26,7 +26,7 @@ const ConversionStatus = function(props) {
                 {tx.awaiting === 'eth-settle' ? <span>
                     {tx.error ? `Submit to Ethereum` : `Submitting to Ethereum`}
                 </span> : null}
-                {!tx.awaiting ? <span>{`WBTC sent`}</span> : null}
+                {!tx.awaiting ? <span>{`Complete`}</span> : null}
             </Typography> : <Typography variant='caption'>
                 {tx.awaiting === 'eth-settle' ? <span>
                     {tx.error ? `Submit to Ethereum` : `Submitting to Ethereum`}
@@ -34,7 +34,7 @@ const ConversionStatus = function(props) {
                 {tx.awaiting === 'ren-settle' ? <span>
                     {`Submitting to RenVM`}
                 </span> : null}
-                {!tx.awaiting ? <span>{`BTC sent`}</span> : null}
+                {!tx.awaiting ? <span>{`Complete`}</span> : null}
             </Typography>}
     </React.Fragment>
 }

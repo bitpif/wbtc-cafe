@@ -80,14 +80,12 @@ const styles = () => ({
       width: '100%'
     },
     address: {
-      fontSize: 14,
+      fontSize: 12,
       marginTop: theme.spacing(2),
-      '& span': {
-          padding: theme.spacing(1),
-          border: '1px solid ' + theme.palette.divider,
-          width: '100%',
-          fontWeight: 'bold'
-      }
+      padding: theme.spacing(1),
+      border: '1px solid ' + theme.palette.divider,
+      width: '100%',
+      fontWeight: 'bold'
     }
 })
 
@@ -147,10 +145,10 @@ class ViewGatewayContainer extends React.Component {
                               </Typography>
 
                               <Typography variant='body1' className={classes.address}>
-                                  <span>{gatewayModalTx.renBtcAddress}</span>
+                                  {gatewayModalTx.renBtcAddress}
                               </Typography>
 
-                              {<Button
+                              <Button
                                   variant="outlined"
                                   size='large'
                                   fullWidth={true}
@@ -158,7 +156,7 @@ class ViewGatewayContainer extends React.Component {
                                   onClick={this.goBack.bind(this)}
                                   >
                                   Close
-                              </Button>}
+                              </Button>
                           </Grid>
                       </Grid>
                 </Grid>
