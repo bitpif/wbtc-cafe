@@ -6,13 +6,8 @@ import classNames from 'classnames'
 import RenSDK from "@renproject/ren";
 import DetectNetwork from "web3-detect-network";
 import { createTransaction, submitToEthereum } from '../utils/renUtils'
-import { initBrowserWallet } from '../utils/walletUtils'
+import { initBrowserWallet, NAME_MAP } from '../utils/walletUtils'
 import { initConvertToEthereum, initMint, completeConvertToEthereum } from '../utils/txUtils'
-import Web3 from "web3";
-import EthCrypto from 'eth-crypto'
-import Box from '3box';
-import Portis from '@portis/web3';
-import Torus from "@toruslabs/torus-embed";
 
 import Grid from '@material-ui/core/Grid';
 import Button from '@material-ui/core/Button';
@@ -27,35 +22,6 @@ import ArrowForwardIcon from '@material-ui/icons/ArrowForward';
 import SnackbarContent from '@material-ui/core/SnackbarContent';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Checkbox from '@material-ui/core/Checkbox';
-
-import CurrencyInput from '../components/CurrencyInput';
-import TransactionItem from '../components/TransactionItem';
-
-import MetamaskIcon from '../assets/metamask.svg';
-import PortisIcon from '../assets/portis.svg';
-import WalletConnectIcon from '../assets/wallet-connect.svg';
-import FortmaticIcon from '../assets/fortmatic.svg';
-import TorusIcon from '../assets/torus.svg';
-import InfoIcon from '@material-ui/icons/Info';
-
-
-// import adapterDelegatedABI from "../utils/adapterDelegatedABI.json";
-
-const adapterDelegatedAddress = '0xA7d1D2b4755E9D578D13e06b5b2796d870F6867a'
-const adapterAddress = '0x5e822a5a9c5cd9b3444228697d319a9f94b83b98'
-
-const contractAddress = '0xe2590f8b8ddad007c936e43a6ab4f464922b1e8d' // adapter.sol
-const vestingAddress = '0x4e4b23e74D203c7009c6a9FFf7751d1fd611F187'
-const zbtcContractAddress = "0xc6069e8dea210c937a846db2cebc0f58ca111f26";
-const registryAddress = '0xbA563a8510d86dE95F5a50007E180d6d4966ad12'
-const uniswapExchangeAddress = '0x2f177704b7ceb1fa56c8956479f321b56ad9e3b4'
-const uniswapFactoryAddress = '0xD3E51Ef092B2845f10401a0159B2B96e8B6c3D30'
-const zbtcUniswapExchangeAddress = '0x66Cf36abceb7f36640000C41dc626afC203180cF'
-const kovanUniswapFactory = "0xD3E51Ef092B2845f10401a0159B2B96e8B6c3D30"
-const buttonChangerAddress = '0x1d45ed651788f1043564a9361fc8962bafe20186'
-const buttonChangerLiteAddress = '0x8040d61b43502b249248fc34a2e377d0ae8ad5cf'
-const basicVerifyAddress = '0x93ac46df2436b2578003568c7c043080935c0df6'
-
 
 
 const styles = () => ({
@@ -189,8 +155,6 @@ class DepositModalContainer extends React.Component {
     }
 
     componentDidMount() {
-        // for debugging
-        // window.initShiftIn = initShiftIn.bind(this)
         window.initConvertToEthereum = initConvertToEthereum.bind(this)
         window.completeConvertToEthereum = completeConvertToEthereum.bind(this)
         window.sdk = this.props.store.get('sdk')
@@ -210,18 +174,6 @@ class DepositModalContainer extends React.Component {
         store.set('gatewayModalTx', depositModalTx)
     }
 
-    calcNetAmount() {
-        const { store } = this.props
-
-        const depositModalTx = store.get('depositModalTx')
-        const amount = depositModalTx.amount
-
-        const renFee = amount * 0.001
-        // const btcTxFeeEstimate = store.get('btcTxFeeEstimate')
-
-        return Number(amount - renFee).toFixed(8)
-    }
-
     check() {
         const { store } = this.props
         const depositDisclosureChecked = store.get('depositDisclosureChecked')
@@ -238,20 +190,17 @@ class DepositModalContainer extends React.Component {
         const depositModalTx = store.get('depositModalTx')
         const btcTxFeeEstimate = store.get('btcTxFeeEstimate')
         const depositDisclosureChecked = store.get('depositDisclosureChecked')
+        const selectedAsset = store.get('selectedAsset')
 
         if (!depositModalTx) return null
 
-        const netAmount = this.calcNetAmount()
-
-        const renFee = Number(depositModalTx.amount * 0.001).toFixed(8)
-        const btcFee = Number(btcTxFeeEstimate).toFixed(8)
-        const totalFee = (Number(renFee) + Number(btcFee)).toFixed(8)
+        const renFee = store.get('convert.renVMFee')
+        const btcFee = store.get('convert.networkFee')
 
         // console.log(this.props, this.state)
 
         const amount = store.get('convert.amount')
         const exchangeRate = store.get('convert.exchangeRate')
-        const fee = store.get('convert.networkFee')
         const total = store.get('convert.conversionTotal')
 
         return <Modal
@@ -280,15 +229,6 @@ class DepositModalContainer extends React.Component {
                                 Confirm Transaction
                               </Typography>}
 
-                              {/*<Typography variant='subtitle1' className={classes.title}>
-                                { depositModalTx.amount } BTC <ArrowForwardIcon className={classes.arrow} /> { netAmount } zBTC
-                              </Typography>*/}
-
-                              {/*<Grid item xs={12}>
-                                  <Typography variant='overline'>
-                                     Deposit fees
-                                  </Typography>
-                              </Grid>*/}
                               <Grid item xs={12}>
                                 <Grid container>
                                     <Grid item xs={6}>
@@ -328,45 +268,26 @@ class DepositModalContainer extends React.Component {
                                     </Grid>
                                     <Grid item xs={6}>
                                         <Typography variant='body1' className={classes.receiptAmount}>
-                                            {`${fee} BTC`}
+                                            {`${renFee} BTC`}
                                         </Typography>
                                     </Grid>
                                 </Grid>
                               </Grid>
 
-                              {/*<Grid item xs={12}>
+                              <Grid item xs={12}>
                                 <Grid container>
-                                    <Grid item xs={6} className={classes.receiptTitle}>
-                                         <Typography variant='caption'>
-                                            Estimated BTC Fee
+                                    <Grid item xs={6}>
+                                         <Typography variant='body1' className={classes.receiptTitle}>
+                                            {NAME_MAP[selectedAsset]} Network Fee
                                          </Typography>
                                     </Grid>
-                                    <Grid item xs={6} className={classes.receiptAmount}>
-                                        <Typography variant='caption'>
-                                            ~{btcFee} BTC
+                                    <Grid item xs={6}>
+                                        <Typography variant='body1' className={classes.receiptAmount}>
+                                            {`${btcFee} BTC`}
                                         </Typography>
                                     </Grid>
                                 </Grid>
-                              </Grid>*/}
-
-                              {/*<Grid item xs={12} className={classes.dividerTotal}>
-                                  <Divider />
                               </Grid>
-
-                              <Grid item xs={12} className={classes.total}>
-                                <Grid container>
-                                    <Grid item xs={6} className={classes.receiptTitle}>
-                                         <Typography variant='caption'>
-                                            Total Fees
-                                         </Typography>
-                                    </Grid>
-                                    <Grid item xs={6} className={classes.receiptAmount}>
-                                        <Typography variant='caption'>
-                                            ~{totalFee} BTC
-                                        </Typography>
-                                    </Grid>
-                                </Grid>
-                              </Grid>*/}
 
                               {<Grid item xs={12} className={classes.divider}>
                                   <Divider />
@@ -387,21 +308,6 @@ class DepositModalContainer extends React.Component {
                                 </Grid>
                               </Grid>
 
-                              {/*<Grid item xs={12}>
-                                <FormControlLabel
-                                    className={classes.disclosure}
-                                  control={
-                                    <Checkbox
-                                      checked={depositDisclosureChecked}
-                                      onChange={this.check.bind(this)}
-                                      value="checkedB"
-                                      color="primary"
-                                    />
-                                  }
-                                  label={`Send exactly ${depositModalTx.amount} BTC to the address shown. Any other amount will be lost.`}
-                                />
-                              </Grid>*/}
-
                               {<SnackbarContent
                                 className={classes.snackbar}
                                 message={<Grid item xs={12}>
@@ -419,10 +325,6 @@ class DepositModalContainer extends React.Component {
                                   />
                                 </Grid>}
                               />}
-
-                              {/*<Typography variant='subtitle2' className={classes.subtitle}>
-                                Send <b>exactly { depositModalTx.amount } BTC</b> to the address shown. <b>Different amounts sent will be lost.</b>
-                              </Typography>*/}
 
                               {<Button
                                   variant={depositDisclosureChecked ? "outlined" : 'contained'}

@@ -6,7 +6,6 @@ import classNames from 'classnames'
 import RenSDK from "@renproject/ren";
 import { createTransaction, submitToEthereum } from '../utils/renUtils'
 import { resetWallet, setNetwork, initLocalWeb3 } from '../utils/walletUtils'
-import AssetChooserContainer from '../containers/AssetChooserContainer'
 
 import Web3 from "web3";
 import EthCrypto from 'eth-crypto'
@@ -27,9 +26,6 @@ import Typography from '@material-ui/core/Typography';
 import Modal from '@material-ui/core/Modal';
 import Backdrop from '@material-ui/core/Backdrop';
 import Fade from '@material-ui/core/Fade';
-
-import CurrencyInput from '../components/CurrencyInput';
-import TransactionItem from '../components/TransactionItem';
 
 import ClickAwayListener from '@material-ui/core/ClickAwayListener';
 import Grow from '@material-ui/core/Grow';
@@ -126,6 +122,7 @@ class NavContainer extends React.Component {
         const selectedNetwork = store.get('selectedNetwork')
 
         const isSignedIn = walletAddress && walletAddress.length
+        const balance = store.get('wbtcBalance')
 
         // console.log(this.props, this.state, this.props.store.getState())
 
@@ -176,9 +173,9 @@ class NavContainer extends React.Component {
                               }} size='small' className={classes.aboutButton}>
                                 <span>How it works<span className={classes.hideMobile}></span></span>
                               </Button>*/}
-                              {/*<div className={classes.faq}>
-                                  <Typography variant='caption'><a href='#' onClick={() => { store.set('showAboutModal', true) }}>How it works</a></Typography>
-                              </div>*/}
+                              {walletAddress && <div className={classes.faq}>
+                                  <Typography variant='caption'>Balance: {balance} WBTC</Typography>
+                              </div>}
                               {<Button onClick={() => {
                                   initLocalWeb3()
                               }} variant="outlined" size='large' className={classes.accountButton}>

@@ -12,13 +12,17 @@ const ConversionStatus = function(props) {
         tx,
     } = props
 
+    const direction = tx.destNetwork === 'ethereum' ? 'in' : 'out'
+    const targetBtcConfs = tx.sourceNetworkVersion === 'testnet' ? 2 : 6
+    const targetEthConfs = tx.sourceNetworkVersion === 'testnet' ? 13 : 30
+
     return <React.Fragment>
             {tx.destNetwork === 'ethereum' ? <Typography variant='caption'>
                 {tx.awaiting === 'btc-init' ? <span>
                     {`Waiting for BTC to be sent`}
                 </span> : null}
                 {tx.awaiting === 'btc-settle' ? <span>
-                    {`BTC transaction confirming (${tx.btcConfirmations}/${'2'} complete)`}
+                    {`BTC transaction confirming (${tx.btcConfirmations}/${targetBtcConfs} complete)`}
                 </span> : null}
                 {tx.awaiting === 'ren-settle' ? <span>
                     {`Submitting to RenVM`}
@@ -29,7 +33,7 @@ const ConversionStatus = function(props) {
                 {!tx.awaiting ? <span>{`Complete`}</span> : null}
             </Typography> : <Typography variant='caption'>
                 {tx.awaiting === 'eth-settle' ? <span>
-                    {tx.error ? `Submit to Ethereum` : `Submitting to Ethereum`}
+                    {tx.error ? `Submit to Ethereum` : `Transaction confirming (${tx.sourceTxConfs}/${targetEthConfs} complete)`}
                 </span> : null}
                 {tx.awaiting === 'ren-settle' ? <span>
                     {`Submitting to RenVM`}

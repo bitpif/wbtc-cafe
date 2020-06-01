@@ -1,40 +1,22 @@
 import React from 'react';
 import Box from '3box';
-import { ethers } from 'ethers'
-import EthCrypto from 'eth-crypto'
 import { createStore, withStore } from '@spyna/react-store'
-import ApolloClient, { gql, InMemoryCache } from 'apollo-boost'
-import { ApolloProvider, Query } from 'react-apollo'
 import { storeListener } from './services/storeService'
+import queryString from 'query-string'
 
 import NavContainer from './containers/NavContainer'
-import BalanceContainer from './containers/BalanceContainer'
 import TransferContainer from './containers/TransferContainer'
-import SwapContainer from './containers/SwapContainer'
-import SignInContainer from './containers/SignInContainer'
 import DepositModalContainer from './containers/DepositModalContainer'
-import AboutModalContainer from './containers/AboutModalContainer'
 import CancelModalContainer from './containers/CancelModalContainer'
 import ViewGatewayContainer from './containers/ViewGatewayContainer'
 import NetworkModalContainer from './containers/NetworkModalContainer'
-import AssetChooserContainer from './containers/AssetChooserContainer'
-import StackedAreaChart from './components/StackedAreaChart'
 import TransactionsTableContainer from './containers/TransactionsTableContainer'
 
-import { initDataWeb3, updateAllowance } from './utils/walletUtils'
+import { initDataWeb3, setNetwork } from './utils/walletUtils'
+import { updateFees } from './utils/txUtils'
 
-import logo from './logo.svg';
-// import BitcoinIcon from './bitcoin-simple.svg';
-import RoundaboutIcon from './assets/roundabout.svg';
-import MetamaskIcon from './assets/metamask.svg';
-import PortisIcon from './assets/portis.svg';
-import WalletConnectIcon from './assets/wallet-connect.svg';
-import FortmaticIcon from './assets/fortmatic.svg';
-import RenIcon from './ren.svg';
-import CompoundIcon from './compound.svg';
 
-import blueGrey from '@material-ui/core/colors/blueGrey';
-import grey from '@material-ui/core/colors/grey';
+import RenVM from './assets/renvm-powered.svg';
 
 import { withStyles, ThemeProvider } from '@material-ui/styles';
 import theme from './theme/theme'
@@ -46,7 +28,6 @@ import Typography from '@material-ui/core/Typography'
 import Table from '@material-ui/core/Table';
 
 import RenSDK from "@renproject/ren";
-import isIncognito from "is-incognito";
 
 import {
     ZBTC_MAIN,
@@ -55,47 +36,45 @@ import {
     ADAPTER_MAIN,
     ADAPTER_TEST,
     BTC_SHIFTER_MAIN,
-    BTC_SHIFTER_TEST
+    BTC_SHIFTER_TEST,
+    CURVE_TEST
 } from './utils/web3Utils'
 
 const styles = () => ({
   container: {
     maxWidth: 450
   },
-  chartContainer: {
-    borderLeft: '0.5px solid ' + theme.palette.divider,
-    padding: theme.spacing(3),
-    paddingTop: theme.spacing(3.5)
-  },
   contentContainer: {
     paddingTop: theme.spacing(3)
-    // borderLeft: '0.5px solid ' + theme.palette.divider,
-    // borderRight: '0.5px solid ' + theme.palette.divider
   },
   footerContainer: {
-    // borderTop: '0.5px solid ' + theme.palette.divider,
     paddingTop: theme.spacing(3),
     paddingBottom: theme.spacing(3),
-    fontSize: 10
+    fontSize: 10,
+    '& a': {
+        color: '#333',
+        marginRight: theme.spacing(2)
+    }
+  },
+  footerLogo: {
+    height: 26,
+    width: 'auto',
+    marginRight: theme.spacing(2),
+    // border: '1px solid ' + theme.palette.divider,
+    // borderRadius: 4
   },
   transfersContainer: {
-    // borderTop: '0.5px solid ' + theme.palette.divider,
     padding: theme.spacing(3)
   },
 })
 
 const initialState = {
     // networking
-    wbtcAddress: WBTC_TEST,
-    btcShifterAddress: BTC_SHIFTER_TEST,
-    adapterAddress: ADAPTER_TEST,
-    selectedNetwork: 'testnet',
+    wbtcAddress: '',
+    adapterAddress: '',
+    selectedNetwork: '',
 
-    // wallet
-    // walletType: '',
-    // walletAddress: '',
-    // walletLoading: false,
-
+    // wallet & web3
     dataWeb3: null,
     localWeb3: null,
     localWeb3Address: '',
@@ -106,14 +85,15 @@ const initialState = {
     loadingBalances: true,
     wbtcBalance: 0,
     ethBalance: 0,
-    sdk: new RenSDK("testnet"),
+    sdk: null,
+    fees: null,
+    queryParams: {},
 
     // navigation
     selectedTab: 1,
     selectedAsset: 'btc',
 
     // modals
-    showSignIn: false,
     showNetworkMenu: false,
     showDepositModal: false,
     depositModalTx: null,
@@ -123,18 +103,6 @@ const initialState = {
     showGatewayModal: false,
     gatewayModalTx: null,
     showAboutModal: false,
-
-    // transfers
-    depositAmount: 0,
-    depositAddress: '',
-    withdrawAmount: 0,
-    withdrawAddress: '',
-    withdrawAddressValid: false,
-    transferAmount: 0,
-    transferAddress: '',
-    transferAddressValid: false,
-    selectedTransferTab: 0,
-    transactions: [],
 
     // conversions
     'convert.adapterAddress': ADAPTER_TEST,
@@ -149,13 +117,8 @@ const initialState = {
     'convert.destinationValid': false,
     'convert.exchangeRate': '',
     'convert.networkFee': '',
+    'convert.renVMFee': '',
     'convert.conversionTotal': '',
-
-    // swaps
-    'swap.transactions': [],
-    'swap.selectedOutputAsset': 'eth',
-    'swap.inputAmount': '',
-    'swap.outputDestination': ''
 }
 
 class AppWrapper extends React.Component {
@@ -165,30 +128,24 @@ class AppWrapper extends React.Component {
     }
 
     async componentDidMount() {
-        // // recover transactions from local storage
-        // const store = this.props.store
-        // const localItems = localStorage.getItem('convert.transactions')
-        // const transactions = localItems ? JSON.parse(localItems) : []
-        // store.set('convert.transactions', transactions)
+        const store = this.props.store
+        const params = queryString.parse(window.location.search)
+        store.set('queryParams', params)
+
+        setNetwork(params.network === 'mainnet' ? 'mainnet' : 'testnet')
 
         initDataWeb3()
-        this.watchWalletData()
-    }
-
-    async watchWalletData() {
-        await updateAllowance();
-        setInterval(async () => {
-            await updateAllowance();
-        }, 10 * 1000);
+        updateFees()
     }
 
     render() {
         const classes = this.props.classes
         storeListener(this.props.store)
 
+        // console.log(this.props.store.getState())
+
         return (
           <ThemeProvider theme={theme}>
-                <SignInContainer />
                 <DepositModalContainer />
                 <CancelModalContainer />
                 <ViewGatewayContainer />
@@ -197,8 +154,6 @@ class AppWrapper extends React.Component {
                   <Container size='lg'>
                     <Grid container className={classes.contentContainer} spacing={2}>
                       <Grid item xs={12} sm={12} md={4}>
-                        <AboutModalContainer />
-                        <BalanceContainer />
                         <TransferContainer />
                       </Grid>
                       <Grid item xs={12} sm={12} md={8} className={classes.transfersContainer}>
@@ -208,10 +163,11 @@ class AppWrapper extends React.Component {
                 </Container>
                 <Grid container className={classes.footerContainer}>
                   <Container size='lg'>
-                    <Grid container>
-                      <Grid item xs={12}>
-                        {/*<Typography variant='caption'>Copyright © WBTC Cafe 2020</Typography>*/}
-                      </Grid>
+                    <Grid container alignItems='center' justify='flex-start'>
+                        <a target='_blank' href={'https://renproject.io'}>
+                          <img className={classes.footerLogo} src={RenVM} />
+                        </a>
+                        <Typography className={classes.footerLinks} variant='caption'><a target='_blank' href={'https://kovan.etherscan.io/address/' + ADAPTER_TEST}>Adapter Contract</a> <a target='_blank' href={'https://kovan.etherscan.io/address/' + CURVE_TEST}>Curve Liquidity Pool</a></Typography>
                     </Grid>
                   </Container>
                 </Grid>

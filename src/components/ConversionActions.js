@@ -25,9 +25,8 @@ const ConversionActions = function(props) {
 
     return <React.Fragment>
       <div>
-        {tx.txHash ? <a className={classes.viewLink} target='_blank' href={'https://' + (tx.destNetworkVersion === 'testnet' ? 'kovan.' : '') + 'etherscan.io/tx/'+tx.txHash}>View Transaction</a> : null}
-
-        {tx.awaiting === 'btc-init' && !tx.error && <React.Fragment>
+        {direction === 'in' && tx.destTxHash ? <a className={classes.viewLink} target='_blank' href={'https://' + (tx.destNetworkVersion === 'testnet' ? 'kovan.' : '') + 'etherscan.io/tx/'+tx.destTxHash}>View ETH Transaction</a> : null}
+        {direction === 'in' && tx.awaiting === 'btc-init' && !tx.error && <React.Fragment>
             <a className={classes.viewLink} onClick={() => {
                 // view modal
                 store.set('showGatewayModal', true)
@@ -38,8 +37,10 @@ const ConversionActions = function(props) {
                 removeTx(tx)
             }}>Cancel</a>
         </React.Fragment>}
+        {direction === 'in' && tx.awaiting === 'btc-settle' && tx.sourceTxHash && <a className={classes.viewLink} target='_blank' href={`https://live.blockcypher.com/btc${tx.sourceNetworkVersion === 'testnet' ? '-testnet' : ''}/tx/${tx.sourceTxHash}`}>View Pending Transaction</a>}
 
-        {tx.awaiting === 'btc-settle' && tx.btcTxHash && <a className={classes.viewLink} target='_blank' href={`https://live.blockcypher.com/btc${tx.destNetworkVersion === 'testnet' ? '-testnet' : ''}/tx/${tx.btcTxHash}`}>View Transaction</a>}
+        {direction === 'out' && tx.sourceTxHash && tx.awaiting === 'eth-settle' ? <a className={classes.viewLink} target='_blank' href={'https://' + (tx.sourceNetworkVersion === 'testnet' ? 'kovan.' : '') + 'etherscan.io/tx/'+tx.sourceTxHash}>View Pending Transaction</a> : null}
+        {direction === 'out' && tx.awaiting === '' && tx.destAddress && <a className={classes.viewLink} target='_blank' href={`https://live.blockcypher.com/btc${tx.destNetworkVersion === 'testnet' ? '-testnet' : ''}/address/${tx.destAddress}`}>View BTC Transaction</a>}
 
         {tx.error && tx.awaiting === 'eth-settle' && <React.Fragment>
             <a className={classes.viewLink} onClick={() => {

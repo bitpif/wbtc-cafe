@@ -64,6 +64,7 @@ class NetworkModalContainer extends React.Component {
         } = this.props
 
         const showNetworkModal = store.get('showNetworkModal')
+        const selectedNetwork = store.get('selectedNetwork')
 
         return <Modal
           aria-labelledby="transition-modal-title"
@@ -85,7 +86,7 @@ class NetworkModalContainer extends React.Component {
                     Switch Network
                 </Typography>
                 <Typography variant='body1' className={classes.content}>
-                    Please connect wallet to the kovan network.
+                    Please connect wallet to the {selectedNetwork === 'testnet' ? 'kovan' : 'mainnet'} network.
                 </Typography>
             </Grid>
           </Fade>

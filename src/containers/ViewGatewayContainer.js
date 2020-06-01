@@ -93,7 +93,15 @@ class ViewGatewayContainer extends React.Component {
 
     constructor(props) {
         super(props);
-        this.state = {}
+        this.state = {
+          address: ''
+        }
+    }
+
+    async componentDidUpdate() {
+        // const store = this.props.store
+        // const gatewayModalTx = store.get('gatewayModalTx')
+        // if (!gatewayModalTx) return
     }
 
     goBack() {
@@ -114,7 +122,7 @@ class ViewGatewayContainer extends React.Component {
 
         if (!gatewayModalTx) return null
 
-        // console.log(this.props, this.state)
+        // console.log(gatewayModalTx)
 
         return <Modal
           aria-labelledby="transition-modal-title"
@@ -145,7 +153,7 @@ class ViewGatewayContainer extends React.Component {
                               </Typography>
 
                               <Typography variant='body1' className={classes.address}>
-                                  {gatewayModalTx.renBtcAddress}
+                                  {gatewayModalTx.renBtcAddress || 'Loading...'}
                               </Typography>
 
                               <Button

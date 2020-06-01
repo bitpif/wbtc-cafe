@@ -70,7 +70,7 @@ class CurrencyInput extends React.Component {
     }
 
     handleClose(event) {
-        console.log(event, event.target, event.target.value)
+        // console.log(event, event.target, event.target.value)
         const value = event.target.value
         if (value) {
             this.props.onCurrencyChange(value)
@@ -92,7 +92,7 @@ class CurrencyInput extends React.Component {
             open
         } = this.state
 
-        console.log(currency)
+        // console.log(currency)
 
         const selected = currency || items[0]
 
