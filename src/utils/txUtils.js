@@ -1,41 +1,18 @@
-import { withStore } from '@spyna/react-store'
 import RenJS from "@renproject/ren";
-import BigNumber from "bignumber.js";
 import adapterABI from "../utils/adapterCurveABI.json";
 import sha256 from 'crypto-js/sha256';
 import Base64 from 'crypto-js/enc-base64';
 
 // import adapterABI from "../utils/adapterABI.json";
-import zbtcABI from "../utils/erc20ABI.json";
 import curveABI from "../utils/curveABI.json";
 // import shifterABI from "../utils/shifterABI.json";
 import { getStore } from '../services/storeService'
 import {
-    ADAPTER_MAIN,
-    ADAPTER_TEST,
     CURVE_TEST,
     CURVE_MAIN
 } from './web3Utils'
 
-export const windowBlocker = function(event) {
-    // Cancel the event as stated by the standard.
-    event.preventDefault();
-
-    const msg = 'WARNING: closing the browser window now may result in loss of funds. Are you sure?';
-
-    // Chrome requires returnValue to be set.
-    event.returnValue = msg
-    return msg
-}
-
-export const setWindowBlocker = function() {
-    window.addEventListener('beforeunload', windowBlocker);
-}
-
-export const removeWindowBlocker = function() {
-    window.removeEventListener('beforeunload', windowBlocker);
-}
-
+// Changin TX State
 export const addTx = (tx) => {
     const store = getStore()
     const storeString = 'convert.transactions'
@@ -108,7 +85,8 @@ export const txExists = function(tx) {
     return getStore().get('convert.transactions').filter(t => t.id === tx.id).length > 0
 }
 
-export const updateFees = async function() {
+// External Data
+export const updateRenVMFees = async function() {
     const store = getStore()
     try {
         const fees = await fetch('https://lightnode-mainnet.herokuapp.com', {
@@ -127,6 +105,44 @@ export const updateFees = async function() {
         // console.log(data)
         // console.log('renvm fees', await fees.json())
         store.set('fees', data)
+    } catch(e) {
+        console.log(e)
+    }
+}
+
+export const gatherFeeData = async function() {
+    const store = getStore()
+    const dataWeb3 = store.get('dataWeb3')
+    const amount = store.get('convert.amount')
+    const selectedNetwork = store.get('selectedNetwork')
+    const fees = store.get('fees')
+    const selectedAsset = store.get('selectedAsset')
+    const selectedDirection = store.get('convert.selectedDirection')
+    const fixedFeeKey = selectedDirection ? 'release' : 'lock'
+    const dynamicFeeKey = selectedDirection ? 'burn' : 'mint'
+
+    const fixedFee = Number(fees[selectedAsset][fixedFeeKey] / (10 ** 8))
+    const dynamicFeeRate = Number(fees[selectedAsset].ethereum[dynamicFeeKey] / 10000)
+
+    if (!amount || !dataWeb3 || !fees) return
+
+    const amountInSats = RenJS.utils.value(amount, "btc").sats().toNumber()
+    const curve = new dataWeb3.eth.Contract(curveABI, selectedNetwork === 'testnet' ? CURVE_TEST : CURVE_MAIN)
+    try {
+        const swapResult = (selectedDirection ?
+          await curve.methods.get_dy(1, 0, amountInSats).call() :
+          await curve.methods.get_dy(0, 1, amountInSats).call()) / (10 ** 8)
+        // console.log(swapResult, amountInSats, amount)
+        const exchangeRate = Number(swapResult / amount).toFixed(4)
+        const totalStartAmount = selectedDirection ? swapResult : amount
+        const renVMFee = (Number(totalStartAmount) * dynamicFeeRate).toFixed(8)
+        const networkFee = Number(fixedFee)
+        const total = Number(totalStartAmount-renVMFee-fixedFee) > 0 ? Number(totalStartAmount-renVMFee-fixedFee).toFixed(6) : '0.000000'
+
+        store.set('convert.exchangeRate', exchangeRate)
+        store.set('convert.renVMFee', renVMFee)
+        store.set('convert.networkFee', networkFee)
+        store.set('convert.conversionTotal', total)
     } catch(e) {
         console.log(e)
     }
@@ -159,37 +175,47 @@ export const getTaggedTxs = async function() {
     }
 }
 
+// BTC to WBTC
+export const monitorMintTx = async function(tx) {
+    const store = getStore()
+    const sdk = store.get('sdk')
+    const web3 = store.get('localWeb3')
+
+    const interval = setInterval(async () => {
+        // Get latest tx state every iteration
+        const latestTx = getTx(tx.id)
+        console.log('latestTx', latestTx)
+
+        // Get transaction details
+        const txDetails = await web3.eth.getTransaction(latestTx.destTxHash)
+        const currentBlock = await web3.eth.getBlockNumber()
+        const confs =  txDetails.blockNumber === null || txDetails.blockNumber > currentBlock ? 0 : currentBlock - txDetails.blockNumber
+
+        // Update confs
+        if (confs > 0) {
+            updateTx(Object.assign(latestTx, {
+                destTxConfs: confs,
+                awaiting: '',
+                error: false
+            }))
+            clearInterval(interval)
+        }
+    }, 1000)
+}
 
 export const completeConvertToEthereum = async function(tx) {
     const store = getStore()
-    const web3 = store.get('web3')
     const localWeb3 = store.get('localWeb3')
     const localWeb3Address = store.get('localWeb3Address')
-    const web3Context = store.get('web3Context')
     const pending = store.get('convert.pendingConvertToEthereum')
-
-    // const adapterAddress = store.get('adapterAddress')
-    const { id, type, params, renResponse, renSignature } = tx
-
-    let adapterContract
-    if (type === 'convert') {
-        adapterContract = new localWeb3.eth.Contract(adapterABI, store.get('convert.adapterAddress'))
-    }
-
-    // const gasPrice = await web3Context.lib.eth.getGasPrice()
-    // console.log('gasPrice', gasPrice)
-
-    updateTx(Object.assign(tx, { awaiting: 'eth-settle' }))
-
-    // console.log('completeDeposit', renResponse, tx, adapterContract)
-
-    // const utxoAmount = Number(renResponse.in.utxo.amount)
+    const { id, params, renResponse, renSignature } = tx
+    const adapterContract = new localWeb3.eth.Contract(adapterABI, store.get('convert.adapterAddress'))
     const utxoAmount = renResponse.autogen.amount
 
-    try {
-        let result
-        if (type === 'convert') {
-            result = await adapterContract.methods.mintThenSwap(
+    if (!tx.destTxHash) {
+        updateTx(Object.assign(tx, { awaiting: 'eth-settle' }))
+        try {
+            const result = await adapterContract.methods.mintThenSwap(
                 params.contractCalls[0].contractParams[0].value,
                 params.contractCalls[0].contractParams[1].value,
                 utxoAmount,
@@ -198,27 +224,22 @@ export const completeConvertToEthereum = async function(tx) {
             ).send({
                 from: localWeb3Address
             })
-            .on('transactionHash', function(hash){
-                console.log('transactionHash', hash)
+            .on('transactionHash', hash => {
+                console.log(hash)
                 updateTx(Object.assign(tx, {
-                  awaiting: 'eth-settle',
-                  destTxHash: hash,
-                  error: false
+                    destTxHash: hash,
+                    error: false
                 }))
+                monitorMintTx(getTx(tx.id))
             })
-            .on('confirmation', function(confirmationNumber, receipt){
-                console.log('confirmation', confirmationNumber, receipt)
-                updateTx(Object.assign(tx, {
-                  destTxConfs: confirmationNumber,
-                  awaiting: ''
-                }))
-            })
+
+            store.set('convert.pendingConvertToEthereum', pending.filter(p => p !== id))
+        } catch(e) {
+            console.log(e)
+            updateTx(Object.assign(tx, { error: true }))
         }
-        store.set('convert.pendingConvertToEthereum', pending.filter(p => p !== id))
-        // updateTx(Object.assign(tx, { awaiting: '', destTxHash: result.transactionHash, error: false }))
-    } catch(e) {
-        // console.log(e)
-        updateTx(Object.assign(tx, { error: true }))
+    } else {
+        monitorMintTx(getTx(tx.id))
     }
 }
 
@@ -293,8 +314,6 @@ export const initConvertToEthereum = async function(tx) {
         store.set('convert.pendingConvertToEthereum', pending.concat([id]))
     }
 
-    // console.log('initConvertToEthereum', tx)
-
     // completed
     if (!awaiting) return
 
@@ -320,15 +339,16 @@ export const initConvertToEthereum = async function(tx) {
         }
 
         // wait for btc
+        const targetConfs = tx.sourceNetworkVersion === 'testnet' ? 2 : 6
         let deposit
         if (awaiting === 'ren-settle' && sourceTxHash && String(sourceTxVOut) !== 'undefined') {
-            deposit = await mint.wait(6, {
+            deposit = await mint.wait(targetConfs, {
                 txHash: sourceTxHash,
                 vOut: sourceTxVOut
             })
         } else {
             deposit = await mint
-                .wait(6)
+                .wait(targetConfs)
                 .on("deposit", dep => {
                     // console.log('on deposit', dep)
                     if (dep.utxo) {
@@ -353,8 +373,6 @@ export const initConvertToEthereum = async function(tx) {
                 })
         }
 
-        console.log('deposit', deposit)
-
         updateTx(Object.assign(tx, { awaiting: 'ren-settle' }))
 
         try {
@@ -371,6 +389,7 @@ export const initConvertToEthereum = async function(tx) {
     }
 }
 
+// WBTC to BTC
 export const monitorBurnTx = async function(tx) {
     const store = getStore()
     const sdk = store.get('sdk')
@@ -391,7 +410,7 @@ export const monitorBurnTx = async function(tx) {
         // Get transaction details
         const txDetails = await web3.eth.getTransaction(latestTx.sourceTxHash)
         const currentBlock = await web3.eth.getBlockNumber()
-        const confs =  txDetails.blockNumber === null ? 0 : currentBlock - txDetails.blockNumber
+        const confs =  txDetails.blockNumber === null || txDetails.blockNumber > currentBlock ? 0 : currentBlock - txDetails.blockNumber
 
         // Update confs
         if (confs !== latestTx.sourceTxConfs) {
@@ -449,15 +468,15 @@ export const initConvertFromEthereum = async function(tx) {
             RenJS.utils.value(amount, "btc").sats().toNumber(), // _amount in Satoshis
             0
         ).send({ from })
-
-        updateTx(Object.assign(tx, {
-          awaiting: 'eth-settle',
-          sourceTxHash: result.transactionHash,
-          error: false
-        }))
-
-        monitorBurnTx(getTx(tx.id))
-        // burn = await initBurn.bind(this)(Object.assign(tx, { txHash: result.transactionHash }))
+        .on('transactionHash', hash => {
+            console.log(hash)
+            updateTx(Object.assign(tx, {
+              awaiting: 'eth-settle',
+              sourceTxHash: hash,
+              error: false
+            }))
+            monitorBurnTx(getTx(tx.id))
+        })
     } catch(e) {
         console.log('eth burn error', e)
         updateTx(Object.assign(tx, { error: true }))
@@ -465,69 +484,21 @@ export const initConvertFromEthereum = async function(tx) {
     }
 }
 
-export const gatherFeeData = async function() {
-    const store = getStore()
-    const dataWeb3 = store.get('dataWeb3')
-    const amount = store.get('convert.amount')
-    const selectedNetwork = store.get('selectedNetwork')
-    const fees = store.get('fees')
-    const selectedAsset = store.get('selectedAsset')
-    const selectedDirection = store.get('convert.selectedDirection')
-    const fixedFeeKey = selectedDirection ? 'release' : 'lock'
-    const dynamicFeeKey = selectedDirection ? 'burn' : 'mint'
-
-    const fixedFee = Number(fees[selectedAsset][fixedFeeKey] / (10 ** 8))
-    const dynamicFeeRate = Number(fees[selectedAsset].ethereum[dynamicFeeKey] / 10000)
-
-    if (!amount || !dataWeb3 || !fees) return
-
-    const amountInSats = RenJS.utils.value(amount, "btc").sats().toNumber()
-    const curve = new dataWeb3.eth.Contract(curveABI, selectedNetwork === 'testnet' ? CURVE_TEST : CURVE_MAIN)
-    try {
-        const swapResult = (selectedDirection ?
-          await curve.methods.get_dy(1, 0, amountInSats).call() :
-          await curve.methods.get_dy(0, 1, amountInSats).call()) / (10 ** 8)
-        // console.log(swapResult, amountInSats, amount)
-        const exchangeRate = Number(swapResult / amount).toFixed(4)
-        const totalStartAmount = selectedDirection ? swapResult : amount
-        const renVMFee = (Number(totalStartAmount) * dynamicFeeRate).toFixed(8)
-        const networkFee = Number(fixedFee)
-        const total = Number(totalStartAmount-renVMFee-fixedFee) > 0 ? Number(totalStartAmount-renVMFee-fixedFee).toFixed(6) : '0.000000'
-
-        store.set('convert.exchangeRate', exchangeRate)
-        store.set('convert.renVMFee', renVMFee)
-        store.set('convert.networkFee', networkFee)
-        store.set('convert.conversionTotal', total)
-    } catch(e) {
-        console.log(e)
-    }
-}
-
 export const initMonitoring = function() {
     const store = getStore()
     const network = store.get('selectedNetwork')
-    const pending = store.get('convert.pendingConvertToEthereum')
-    let txs = store.get('convert.transactions')
-        // .filter(t => t.network === network)
-    // console.log('initMonitoring', store.getState())
+    let txs = store.get('convert.transactions').filter(t => t.sourceNetworkVersion === network)
 
     txs.map(tx => {
-        // console.log('tx', tx)
         if (tx.sourceNetwork === 'bitcoin') {
             initConvertToEthereum.bind(this)(tx)
-        }
-
-        if (tx.sourceNetwork === 'ethereum' && tx.awaiting && !tx.error) {
+        } else if (tx.sourceNetwork === 'ethereum' && tx.awaiting && !tx.error) {
             monitorBurnTx(tx)
         }
     })
-
-    // // transfers via gateway js
-    // recoverTrades.bind(this)()
 }
 
 window.getTaggedTxs = getTaggedTxs
-// window.cryptoJs = cryptoJs
 
 export default {
     addTx,

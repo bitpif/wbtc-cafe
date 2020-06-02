@@ -1,12 +1,7 @@
 import Web3 from "web3";
 import RenSDK from "@renproject/ren";
-import DetectNetwork from "web3-detect-network";
 import Box from '3box';
-import Portis from '@portis/web3';
-import Torus from "@toruslabs/torus-embed";
 import Web3Modal from 'web3modal'
-import Authereum from "authereum"
-import Fortmatic from "fortmatic";
 
 import BTC from '../assets/btc.png'
 import ETH from '../assets/eth.png'

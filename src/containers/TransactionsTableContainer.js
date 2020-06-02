@@ -80,6 +80,7 @@ class TransactionsTableContainer extends React.Component {
         const localWeb3Address = store.get('localWeb3Address')
         const space = store.get('space')
         const spaceError = store.get('spaceError')
+        const selectedNetwork = store.get('selectedNetwork')
 
         return <div className={classes.container}>
           {/*<div className={classes.titleWrapper}>
@@ -95,7 +96,7 @@ class TransactionsTableContainer extends React.Component {
               </TableRow>
             </TableHead>
             <TableBody>
-              {localWeb3Address && transactions.map((tx, i) => {
+              {localWeb3Address && transactions.filter(t => t.sourceNetworkVersion === selectedNetwork).map((tx, i) => {
                 const destAsset = tx.destAsset.toUpperCase()
                 const sourceAsset = tx.sourceAsset.toUpperCase()
                 return <TableRow key={i}>

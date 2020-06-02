@@ -201,8 +201,6 @@ class TransferContainer extends React.Component {
 
         store.set('depositModalTx', tx)
         store.set('showDepositModal', true)
-
-
     }
 
     async newWithdraw() {

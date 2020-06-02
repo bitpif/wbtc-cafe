@@ -1,7 +1,6 @@
 import React from 'react';
 import theme from '../theme/theme'
 import { withStyles } from '@material-ui/styles';
-import Typography from '@material-ui/core/Typography';
 import { removeTx, initConvertFromEthereum } from '../utils/txUtils'
 import { getStore } from '../services/storeService'
 
@@ -37,10 +36,10 @@ const ConversionActions = function(props) {
                 removeTx(tx)
             }}>Cancel</a>
         </React.Fragment>}
-        {direction === 'in' && tx.awaiting === 'btc-settle' && tx.sourceTxHash && <a className={classes.viewLink} target='_blank' href={`https://live.blockcypher.com/btc${tx.sourceNetworkVersion === 'testnet' ? '-testnet' : ''}/tx/${tx.sourceTxHash}`}>View Pending Transaction</a>}
+        {direction === 'in' && tx.awaiting === 'btc-settle' && tx.sourceTxHash && <a className={classes.viewLink} target='_blank' href={`https://sochain.com/tx/BTC${tx.sourceNetworkVersion === 'testnet' ? 'TEST' : ''}/${tx.sourceTxHash}`}>View BTC Transaction</a>}
 
-        {direction === 'out' && tx.sourceTxHash && tx.awaiting === 'eth-settle' ? <a className={classes.viewLink} target='_blank' href={'https://' + (tx.sourceNetworkVersion === 'testnet' ? 'kovan.' : '') + 'etherscan.io/tx/'+tx.sourceTxHash}>View Pending Transaction</a> : null}
-        {direction === 'out' && tx.awaiting === '' && tx.destAddress && <a className={classes.viewLink} target='_blank' href={`https://live.blockcypher.com/btc${tx.destNetworkVersion === 'testnet' ? '-testnet' : ''}/address/${tx.destAddress}`}>View BTC Transaction</a>}
+        {direction === 'out' && tx.sourceTxHash && tx.awaiting === 'eth-settle' ? <a className={classes.viewLink} target='_blank' href={'https://' + (tx.sourceNetworkVersion === 'testnet' ? 'kovan.' : '') + 'etherscan.io/tx/'+tx.sourceTxHash}>View Transaction</a> : null}
+        {direction === 'out' && tx.awaiting === '' && tx.destAddress && <a className={classes.viewLink} target='_blank' href={`https://sochain.com/address/BTC${tx.destNetworkVersion === 'testnet' ? 'TEST' : ''}/${tx.destAddress}`}>View BTC Transaction</a>}
 
         {tx.error && tx.awaiting === 'eth-settle' && <React.Fragment>
             <a className={classes.viewLink} onClick={() => {

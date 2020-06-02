@@ -1,7 +1,4 @@
-import { getStore } from '../services/storeService'
-
 export const ADAPTER_MAIN = '0xc995c7cb6a3faecc8a3e033575b3592f727455f8'
-// export const ADAPTER_TEST = '0x9c8158bb0d5c99d8623159070eaf3af7cda705af'
 export const ADAPTER_TEST = '0x8fb1a3e0eb443a91f28728b8799f5f0eb8a51f96' // curve
 export const CURVE_MAIN = '0x93054188d876f558f4a66B2EF1d97d16eDf0895B'
 export const CURVE_TEST = '0x62869F49ea8b6c3EEdEcA8b8b1c6731090aD7A3D'

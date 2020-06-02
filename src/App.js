@@ -13,7 +13,7 @@ import NetworkModalContainer from './containers/NetworkModalContainer'
 import TransactionsTableContainer from './containers/TransactionsTableContainer'
 
 import { initDataWeb3, setNetwork } from './utils/walletUtils'
-import { updateFees } from './utils/txUtils'
+import { updateRenVMFees } from './utils/txUtils'
 
 
 import RenVM from './assets/renvm-powered.svg';
@@ -135,7 +135,7 @@ class AppWrapper extends React.Component {
         setNetwork(params.network === 'mainnet' ? 'mainnet' : 'testnet')
 
         initDataWeb3()
-        updateFees()
+        updateRenVMFees()
     }
 
     render() {

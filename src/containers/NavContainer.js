@@ -129,7 +129,7 @@ class NavContainer extends React.Component {
         return <Grid item xs={12} className={classes.navContainer}>
             <Container size='lg'>
               {<Grid  container alignItems='center'>
-                <Grid item xs={12} sm={8}>
+                <Grid item xs={12} sm={4}>
                     <Grid container alignItems='center'>
                           {<img className={classes.logo} src={WBTCIcon} />}
                           <Typography className={classes.title}><b>WBTC</b> </Typography>
@@ -137,7 +137,7 @@ class NavContainer extends React.Component {
                           {/*<Typography variant='caption'> Bitcoin on Ethereum. <a href='javascript:;' onClick={() => { store.set('showAboutModal', true) }}>How it works</a></Typography>*/}
                     </Grid>
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid item xs={12} sm={8}>
                     <Grid container justify='flex-end' alignItems='center'>
                         {/*<AssetChooserContainer />*/}
                             {/*<Button
