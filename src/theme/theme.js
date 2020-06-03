@@ -40,7 +40,10 @@ export default createMuiTheme({
                         border: '1px solid transparent'
                     }
                 },
-                borderRadius: 0
+                borderRadius: 0,
+                '& span': {
+                    fontSize: 12
+                }
             }
         },
         PrivateNotchedOutline: {

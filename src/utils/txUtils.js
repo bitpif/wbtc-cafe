@@ -3,16 +3,14 @@ import adapterABI from "../utils/adapterCurveABI.json";
 import sha256 from 'crypto-js/sha256';
 import Base64 from 'crypto-js/enc-base64';
 
-// import adapterABI from "../utils/adapterABI.json";
 import curveABI from "../utils/curveABI.json";
-// import shifterABI from "../utils/shifterABI.json";
 import { getStore } from '../services/storeService'
 import {
     CURVE_TEST,
     CURVE_MAIN
 } from './web3Utils'
 
-// Changin TX State
+// Changing TX State
 export const addTx = (tx) => {
     const store = getStore()
     const storeString = 'convert.transactions'
@@ -20,12 +18,12 @@ export const addTx = (tx) => {
     txs.push(tx)
     store.set(storeString, txs)
 
-    // const space = store.get('space')
-    // // console.log('space', space)
-    //
-    // if (space) {
-    //     space.public.set(storeString, JSON.stringify(txs))
-    // }
+    const space = store.get('space')
+    // console.log('space', space)
+
+    if (space) {
+        space.public.set(storeString, JSON.stringify(txs))
+    }
 
     // use localStorage
     localStorage.setItem(storeString, JSON.stringify(txs))
@@ -46,16 +44,18 @@ export const updateTx = (newTx) => {
     })
     store.set(storeString, txs)
 
-    // const space = store.get('space')
-    // if (space) {
-    //     space.public.set(storeString, JSON.stringify(txs))
-    // }
+    const space = store.get('space')
+    if (space) {
+        space.public.set(storeString, JSON.stringify(txs))
+    }
 
     // use localStorage
     localStorage.setItem(storeString, JSON.stringify(txs))
 
     // for debugging
     window.txs = txs
+
+    return newTx
 }
 
 export const removeTx = (tx) => {
@@ -65,10 +65,10 @@ export const removeTx = (tx) => {
     // console.log(txs)
     store.set(storeString, txs)
 
-    // const space = store.get('space')
-    // if (space) {
-    //     space.public.set(storeString, JSON.stringify(txs))
-    // }
+    const space = store.get('space')
+    if (space) {
+        space.public.set(storeString, JSON.stringify(txs))
+    }
 
     // use localStorage
     localStorage.setItem(storeString, JSON.stringify(txs))
@@ -110,6 +110,27 @@ export const updateRenVMFees = async function() {
     }
 }
 
+export const getExchangeRate = async function(tx) {
+    const store = getStore()
+    const dataWeb3 = store.get('dataWeb3')
+    const selectedNetwork = store.get('selectedNetwork')
+    const {
+        amount,
+        sourceAsset
+    } = tx
+
+    const amountInSats = RenJS.utils.value(amount, "btc").sats().toNumber()
+    const curve = new dataWeb3.eth.Contract(curveABI, selectedNetwork === 'testnet' ? CURVE_TEST : CURVE_MAIN)
+    try {
+        const swapResult = (sourceAsset === 'wbtc' ?
+          await curve.methods.get_dy(1, 0, amountInSats).call() :
+          await curve.methods.get_dy(0, 1, amountInSats).call()) / (10 ** 8)
+        return Number(swapResult / amount).toFixed(4)
+    } catch (e) {
+        console.log(e)
+    }
+}
+
 export const gatherFeeData = async function() {
     const store = getStore()
     const dataWeb3 = store.get('dataWeb3')
@@ -126,22 +147,39 @@ export const gatherFeeData = async function() {
 
     if (!amount || !dataWeb3 || !fees) return
 
-    const amountInSats = RenJS.utils.value(amount, "btc").sats().toNumber()
-    const curve = new dataWeb3.eth.Contract(curveABI, selectedNetwork === 'testnet' ? CURVE_TEST : CURVE_MAIN)
     try {
-        const swapResult = (selectedDirection ?
-          await curve.methods.get_dy(1, 0, amountInSats).call() :
-          await curve.methods.get_dy(0, 1, amountInSats).call()) / (10 ** 8)
-        // console.log(swapResult, amountInSats, amount)
-        const exchangeRate = Number(swapResult / amount).toFixed(4)
-        const totalStartAmount = selectedDirection ? swapResult : amount
-        const renVMFee = (Number(totalStartAmount) * dynamicFeeRate).toFixed(8)
-        const networkFee = Number(fixedFee)
-        const total = Number(totalStartAmount-renVMFee-fixedFee) > 0 ? Number(totalStartAmount-renVMFee-fixedFee).toFixed(6) : '0.000000'
+        let exchangeRate
+        let renVMFee
+        let total
+        const amountInSats = RenJS.utils.value(amount, "btc").sats().toNumber()
+        const curve = new dataWeb3.eth.Contract(curveABI, selectedNetwork === 'testnet' ? CURVE_TEST : CURVE_MAIN)
+
+        // withdraw
+        if (selectedDirection) {
+            const swapResult = await curve.methods.get_dy(1, 0, amountInSats).call() / (10 ** 8)
+            exchangeRate = Number(swapResult / amount).toFixed(4)
+            renVMFee = (Number(swapResult) * dynamicFeeRate).toFixed(8)
+            total = Number(swapResult-renVMFee-fixedFee) > 0 ? Number(swapResult-renVMFee-fixedFee).toFixed(6) : '0.000000'
+        } else {
+            renVMFee = (Number(amount) * dynamicFeeRate).toFixed(8)
+            const amountAfterMint = Number(amount-renVMFee-fixedFee) > 0 ? Number(amount-renVMFee-fixedFee) : 0
+            const amountAfterMintInSats = Math.round(RenJS.utils.value(amountAfterMint, "btc").sats().toNumber())
+
+            console.log(amountAfterMintInSats, renVMFee, fixedFee)
+
+            if (amountAfterMintInSats) {
+                const swapResult = await curve.methods.get_dy(0, 1, amountAfterMintInSats).call() / (10 ** 8)
+                exchangeRate = Number(swapResult / amountAfterMint).toFixed(4)
+                total = Number(swapResult).toFixed(6)
+            } else {
+                exchangeRate = Number(0).toFixed(4)
+                total = Number(0).toFixed(6)
+            }
+        }
 
         store.set('convert.exchangeRate', exchangeRate)
         store.set('convert.renVMFee', renVMFee)
-        store.set('convert.networkFee', networkFee)
+        store.set('convert.networkFee', fixedFee)
         store.set('convert.conversionTotal', total)
     } catch(e) {
         console.log(e)
@@ -203,19 +241,41 @@ export const monitorMintTx = async function(tx) {
     }, 1000)
 }
 
-export const completeConvertToEthereum = async function(tx) {
+export const completeConvertToEthereum = async function(transaction, approveSwap) {
     const store = getStore()
     const localWeb3 = store.get('localWeb3')
     const localWeb3Address = store.get('localWeb3Address')
     const pending = store.get('convert.pendingConvertToEthereum')
-    const { id, params, renResponse, renSignature } = tx
-    const adapterContract = new localWeb3.eth.Contract(adapterABI, store.get('convert.adapterAddress'))
+    const renResponse = transaction.renResponse
+
+    // amount user sent
+    const userBtcTxAmount = Number((renResponse.in.utxo.amount / (10 ** 8)).toFixed(8))
+    // amount in renvm after fixed fee
     const utxoAmount = renResponse.autogen.amount
+    // update amount to the actual amount sent
+    const tx = updateTx(Object.assign(transaction, { sourceAmount: userBtcTxAmount }))
+
+    const { id, sourceAmount, params, renSignature, minSwapProceeds } = tx
+    const adapterContract = new localWeb3.eth.Contract(adapterABI, store.get('convert.adapterAddress'))
+
+    // if swap will revert to renBTC, let the user know before proceeding
+    const exchangeRate = await getExchangeRate(tx)
+    const expectedProceeds = Number(sourceAmount * exchangeRate)
+    console.log(exchangeRate, expectedProceeds, minSwapProceeds)
+    if (!approveSwap && expectedProceeds < minSwapProceeds) {
+        store.set('swapRevertModalTx', tx)
+        store.set('showSwapRevertModal', true)
+        store.set('swapRevertModalExchangeRate', exchangeRate)
+        updateTx(Object.assign(tx, { awaiting: 'eth-settle', error: true }))
+        return
+    }
 
     if (!tx.destTxHash) {
-        updateTx(Object.assign(tx, { awaiting: 'eth-settle' }))
+        updateTx(Object.assign(tx, {
+            awaiting: 'eth-settle',
+        }))
         try {
-            const result = await adapterContract.methods.mintThenSwap(
+            await adapterContract.methods.mintThenSwap(
                 params.contractCalls[0].contractParams[0].value,
                 params.contractCalls[0].contractParams[1].value,
                 utxoAmount,
@@ -226,11 +286,11 @@ export const completeConvertToEthereum = async function(tx) {
             })
             .on('transactionHash', hash => {
                 console.log(hash)
-                updateTx(Object.assign(tx, {
+                const newTx = updateTx(Object.assign(tx, {
                     destTxHash: hash,
                     error: false
                 }))
-                monitorMintTx(getTx(tx.id))
+                monitorMintTx(newTx)
             })
 
             store.set('convert.pendingConvertToEthereum', pending.filter(p => p !== id))
@@ -249,13 +309,11 @@ export const initMint = function(tx) {
       amount,
       params,
       destAddress,
+      minSwapProceeds
     } = tx
     const store = getStore()
     const {
-        sdk,
-        gjs,
-        localWeb3,
-        localWeb3Address
+        sdk
     } = store.getState()
 
     let adapterAddress = ''
@@ -269,7 +327,7 @@ export const initMint = function(tx) {
             {
                 name: "_minWbtcAmount",
                 type: "uint256",
-                value: 0
+                value: RenJS.utils.value(minSwapProceeds, "btc").sats().toNumber()
             },
             {
                 name: "_wbtcDestination",
@@ -324,12 +382,13 @@ export const initConvertToEthereum = async function(tx) {
 
     // ren already exposed a signature
     if (renResponse && renSignature && !error) {
+        // sometimes api calls fail when loading the page
         completeConvertToEthereum.bind(this)(tx)
     } else {
         // create or re-create shift in
         const mint = await initMint.bind(this)(tx)
 
-        console.log('initConvertToEthereum mint', mint)
+        console.log('initConvertToEthereum mint', mint, tx)
 
         if (!params) {
             addTx(Object.assign(tx, {
@@ -396,11 +455,18 @@ export const monitorBurnTx = async function(tx) {
     const web3 = store.get('localWeb3')
     const targetConfs = tx.sourceNetworkVersion === 'testnet' ? 13 : 30
 
-    const burn = await sdk.burnAndRelease({
-        sendToken: RenJS.Tokens.BTC.Eth2Btc,
-        web3Provider: web3.currentProvider,
-        ethereumTxHash: tx.sourceTxHash,
-    }).readFromEthereum()
+    let burn;
+    try {
+        burn = await sdk.burnAndRelease({
+            sendToken: RenJS.Tokens.BTC.Eth2Btc,
+            web3Provider: web3.currentProvider,
+            ethereumTxHash: tx.sourceTxHash,
+        }).readFromEthereum()
+    } catch(e) {
+        console.log(e)
+        updateTx(Object.assign(tx, { error: true }))
+        return
+    }
 
     const interval = setInterval(async () => {
         // Get latest tx state every iteration
@@ -442,13 +508,12 @@ export const monitorBurnTx = async function(tx) {
     }, 1000)
 }
 
-export const initConvertFromEthereum = async function(tx) {
+export const initConvertFromEthereum = async function(tx, approveSwap) {
     const store = getStore()
     const web3 = store.get('localWeb3')
-    const sdk = store.get('sdk')
     const adapterAddress = store.get('convert.adapterAddress')
     const walletAddress = store.get('localWeb3Address')
-    const { id, awaiting, amount, destAddress, txHash } = tx
+    const { amount, destAddress, minSwapProceeds } = tx
 
     const from = walletAddress;
     const adapter = new web3.eth.Contract(adapterABI, adapterAddress);
@@ -460,13 +525,22 @@ export const initConvertFromEthereum = async function(tx) {
         updateTx(Object.assign(tx, { error: false }))
     }
 
+    // if swap will revert to renBTC, let the user know before proceeding
+    const exchangeRate = await getExchangeRate(tx)
+    const expectedProceeds = Number(amount * exchangeRate)
+    if (!approveSwap && expectedProceeds < minSwapProceeds) {
+        store.set('swapRevertModalTx', tx)
+        store.set('showSwapRevertModal', true)
+        return
+    }
+
     console.log('initWithdraw', tx)
 
     try {
-        const result = await adapter.methods.swapThenBurn(
+        await adapter.methods.swapThenBurn(
             RenJS.utils.BTC.addressToHex(destAddress), //_to
             RenJS.utils.value(amount, "btc").sats().toNumber(), // _amount in Satoshis
-            0
+            RenJS.utils.value(minSwapProceeds, "btc").sats().toNumber()
         ).send({ from })
         .on('transactionHash', hash => {
             console.log(hash)

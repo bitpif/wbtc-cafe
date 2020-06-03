@@ -1,7 +1,7 @@
 import React from 'react';
 import theme from '../theme/theme'
 import { withStyles } from '@material-ui/styles';
-import { removeTx, initConvertFromEthereum } from '../utils/txUtils'
+import { removeTx, initConvertFromEthereum, completeConvertToEthereum } from '../utils/txUtils'
 import { getStore } from '../services/storeService'
 
 const styles = () => ({
@@ -43,7 +43,11 @@ const ConversionActions = function(props) {
 
         {tx.error && tx.awaiting === 'eth-settle' && <React.Fragment>
             <a className={classes.viewLink} onClick={() => {
-                initConvertFromEthereum(tx)
+                if (direction === 'out') {
+                    initConvertFromEthereum(tx)
+                } else {
+                    completeConvertToEthereum(tx)
+                }
             }}>Submit</a>
             {direction === 'out' && <a className={classes.viewLink} onClick={() => {
                 removeTx(tx)
@@ -51,6 +55,10 @@ const ConversionActions = function(props) {
         </React.Fragment>}
 
         {!tx.awaiting && !tx.error && <a className={classes.viewLink} onClick={() => {
+            removeTx(tx)
+        }}>Clear</a>}
+
+        {direction === 'out' && tx.error && tx.sourceTxHash && <a className={classes.viewLink} onClick={() => {
             removeTx(tx)
         }}>Clear</a>}
       </div>

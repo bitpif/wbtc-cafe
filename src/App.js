@@ -10,6 +10,7 @@ import DepositModalContainer from './containers/DepositModalContainer'
 import CancelModalContainer from './containers/CancelModalContainer'
 import ViewGatewayContainer from './containers/ViewGatewayContainer'
 import NetworkModalContainer from './containers/NetworkModalContainer'
+import SwapRevertModalContainer from './containers/SwapRevertModalContainer'
 import TransactionsTableContainer from './containers/TransactionsTableContainer'
 
 import { initDataWeb3, setNetwork } from './utils/walletUtils'
@@ -103,6 +104,9 @@ const initialState = {
     showGatewayModal: false,
     gatewayModalTx: null,
     showAboutModal: false,
+    showSwapRevertModal: false,
+    swapRevertModalTx: null,
+    swapRevertModalExchangeRate: '',
 
     // conversions
     'convert.adapterAddress': ADAPTER_TEST,
@@ -119,6 +123,7 @@ const initialState = {
     'convert.networkFee': '',
     'convert.renVMFee': '',
     'convert.conversionTotal': '',
+    'convert.maxSlippage': 0.005
 }
 
 class AppWrapper extends React.Component {
@@ -150,6 +155,7 @@ class AppWrapper extends React.Component {
                 <CancelModalContainer />
                 <ViewGatewayContainer />
                 <NetworkModalContainer />
+                <SwapRevertModalContainer />
                 <NavContainer />
                   <Container size='lg'>
                     <Grid container className={classes.contentContainer} spacing={2}>
@@ -167,7 +173,7 @@ class AppWrapper extends React.Component {
                         <a target='_blank' href={'https://renproject.io'}>
                           <img className={classes.footerLogo} src={RenVM} />
                         </a>
-                        <Typography className={classes.footerLinks} variant='caption'><a target='_blank' href={'https://kovan.etherscan.io/address/' + ADAPTER_TEST}>Adapter Contract</a> <a target='_blank' href={'https://kovan.etherscan.io/address/' + CURVE_TEST}>Curve Liquidity Pool</a></Typography>
+                        <Typography className={classes.footerLinks} variant='caption'><a target='_blank' href={'https://kovan.etherscan.io/address/' + ADAPTER_TEST}>Contract</a> <a target='_blank' href={'https://kovan.etherscan.io/address/' + CURVE_TEST}>Liquidity Pool</a></Typography>
                     </Grid>
                   </Container>
                 </Grid>

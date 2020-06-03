@@ -76,11 +76,13 @@ class TransactionsTableContainer extends React.Component {
             store
         } = this.props
 
+        const selectedNetwork = store.get('selectedNetwork')
         const transactions = store.get('convert.transactions')
+            .filter(t => t.sourceNetworkVersion === selectedNetwork)
         const localWeb3Address = store.get('localWeb3Address')
         const space = store.get('space')
         const spaceError = store.get('spaceError')
-        const selectedNetwork = store.get('selectedNetwork')
+
 
         return <div className={classes.container}>
           {/*<div className={classes.titleWrapper}>
@@ -96,11 +98,11 @@ class TransactionsTableContainer extends React.Component {
               </TableRow>
             </TableHead>
             <TableBody>
-              {localWeb3Address && transactions.filter(t => t.sourceNetworkVersion === selectedNetwork).map((tx, i) => {
-                const destAsset = tx.destAsset.toUpperCase()
+              {localWeb3Address && transactions.map((tx, i) => {
+                const destAsset = tx.swapReverted ? 'RENBTC' : tx.destAsset.toUpperCase()
                 const sourceAsset = tx.sourceAsset.toUpperCase()
                 return <TableRow key={i}>
-                  <TableCell align="left"><Typography variant='caption'>{tx.amount} {sourceAsset} → {destAsset}</Typography></TableCell>
+                  <TableCell align="left"><Typography variant='caption'>{tx.sourceAmount ? tx.sourceAmount : tx.amount} {sourceAsset} → {destAsset}</Typography></TableCell>
                   <TableCell><Typography variant='caption'><ConversionStatus tx={tx} /></Typography></TableCell>
                   <TableCell>
                       <Grid container justify='flex-end'>
@@ -114,15 +116,15 @@ class TransactionsTableContainer extends React.Component {
           {!localWeb3Address && <div className={classes.emptyMessage}>
               <Typography variant='caption'>Please <ActionLink onClick={initLocalWeb3}>connect wallet</ActionLink> to view transactions</Typography>
           </div>}
-          {/*localWeb3Address && !space && <div className={classes.emptyMessage}>
+          {localWeb3Address && !space && <div className={classes.emptyMessage}>
               {spaceError ? <Typography variant='caption'>Connection to 3box failed. <ActionLink onClick={initLocalWeb3}>Retry</ActionLink></Typography> : <Typography variant='caption'>Loading transactions...</Typography>}
-          </div>*/}
-          {/*localWeb3Address && space && !transactions.length && <div className={classes.emptyMessage}>
-              <Typography variant='caption'>No transactions</Typography>
-          </div>*/}
-          {localWeb3Address && !transactions.length && <div className={classes.emptyMessage}>
+          </div>}
+          {localWeb3Address && space && !transactions.length && <div className={classes.emptyMessage}>
               <Typography variant='caption'>No transactions</Typography>
           </div>}
+          {/*localWeb3Address && !transactions.length && <div className={classes.emptyMessage}>
+              <Typography variant='caption'>No transactions</Typography>
+          </div>*/}
         </div>
     }
 }

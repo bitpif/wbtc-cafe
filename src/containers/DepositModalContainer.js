@@ -75,7 +75,7 @@ const styles = () => ({
         minWidth: 'auto',
         marginTop: theme.spacing(3),
         '& b': {
-            textDecoration: 'underline'
+            // textDecoration: 'underline'
         },
         '& svg': {
             color: '#fff'
@@ -321,7 +321,7 @@ class DepositModalContainer extends React.Component {
                                         color="primary"
                                       />
                                     }
-                                    label={<span>Send <b>{depositModalTx.amount} BTC</b> in <b>1 bitcoin transaction</b> to the address given. Any additional amounts will be lost.</span>}
+                                    label={<span>Send <b>{depositModalTx.amount} BTC</b> in <b>1 Bitcoin transaction</b> to the address given. Any additional amounts will be lost.</span>}
                                   />
                                 </Grid>}
                               />}

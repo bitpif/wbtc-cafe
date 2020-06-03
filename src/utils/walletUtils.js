@@ -181,45 +181,58 @@ export const initLocalWeb3 = async function() {
     store.set('localWeb3Address', accounts[0])
     store.set('localWeb3Network', network)
 
-    console.log(currentProvider);
+    // console.log(currentProvider);
 
     try {
-        // // recover transactions from 3box
-        // const box = await Box.openBox(accounts[0], currentProvider)
-        // const space = await box.openSpace("wbtc-cafe")
-        // const txData = await space.public.get('convert.transactions')
-        // // console.log('txData', txData)
-        // const transactions = txData ? JSON.parse(txData) : []
-        // store.set('convert.transactions', transactions)
-        // store.set('space', space)
-        // window.space = space
 
         // recover from localStorage
-        const txData = localStorage.getItem('convert.transactions')
-        const transactions = txData ? JSON.parse(txData) : []
-        store.set('convert.transactions', transactions)
+        const lsData = localStorage.getItem('convert.transactions')
+        const lsTransactions = lsData ? JSON.parse(lsData) : []
+        const lsIds = lsTransactions.map(t => t.id)
 
-        // if (network === 'testnet') {
-          watchWalletData()
-          gatherFeeData()
-          initMonitoring()
-        // }
+        // 3box for some reason doesn't load data right away
+        setTimeout(async () => {
+            // recover transactions from 3box
+            const box = await Box.openBox(accounts[0], currentProvider)
+            const space = await box.openSpace("wbtc-cafe")
+            const boxData = await space.public.get('convert.transactions')
 
-        // listen for changes
-        currentProvider.on('accountsChanged', async () => {
-            resetWallet()
-            initLocalWeb3()
-        })
+            const boxTransactions = boxData ? JSON.parse(boxData) : []
+            const uniqueBoxTransactions = boxTransactions.filter(btx => lsIds.indexOf(btx.id) < 0)
+            const transactions = lsTransactions.concat(uniqueBoxTransactions)
+            console.log(lsTransactions, boxTransactions, uniqueBoxTransactions, transactions)
+            store.set('convert.transactions', transactions)
+            store.set('space', space)
 
-        currentProvider.on('chainChanged', async () => {
-            resetWallet()
-            initLocalWeb3()
-        })
+            // update 3box to latest
+            if (uniqueBoxTransactions.length) {
+                space.public.set('convert.transactions', JSON.stringify(transactions))
+            }
 
-        currentProvider.on('networkChanged', async () => {
-            resetWallet()
-            initLocalWeb3()
-        })
+            window.space = space
+
+            // if (network === 'testnet') {
+              watchWalletData()
+              gatherFeeData()
+              initMonitoring()
+            // }
+
+            // listen for changes
+            currentProvider.on('accountsChanged', async () => {
+                resetWallet()
+                initLocalWeb3()
+            })
+
+            currentProvider.on('chainChanged', async () => {
+                resetWallet()
+                initLocalWeb3()
+            })
+
+            currentProvider.on('networkChanged', async () => {
+                resetWallet()
+                initLocalWeb3()
+            })
+        }, 1000)
     } catch(e) {
         store.set('spaceError', true)
         console.log(e)

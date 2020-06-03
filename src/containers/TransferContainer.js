@@ -30,6 +30,7 @@ import ToggleButton from '@material-ui/lab/ToggleButton';
 import ToggleButtonGroup from '@material-ui/lab/ToggleButtonGroup';
 
 import CurrencyInput from '../components/CurrencyInput';
+import ActionLink from '../components/ActionLink';
 
 import adapterABI from "../utils/adapterABI.json";
 
@@ -123,11 +124,33 @@ const styles = () => ({
         padding: theme.spacing(1),
         paddingBottom: 0,
         marginTop: theme.spacing(1),
-        marginBottom: theme.spacing(3),
+        marginBottom: theme.spacing(1.5),
         display: 'flex',
         flexDirection:'column',
         '& span': {
             marginBottom: theme.spacing(1)
+        }
+    },
+    slippage: {
+        width: '100%',
+        border: '1px solid ' + theme.palette.divider,
+        fontSize: 12,
+        padding: theme.spacing(1),
+        paddingBottom: 0,
+        marginTop: theme.spacing(1),
+        display: 'flex',
+        marginBottom: theme.spacing(3),
+        flexDirection:'column',
+        '& span': {
+            marginBottom: theme.spacing(1)
+        }
+    },
+    slippageRate: {
+        '& a': {
+            marginLeft: theme.spacing(1)
+        },
+        '& span': {
+            marginLeft: theme.spacing(1)
         }
     },
     icon: {
@@ -144,6 +167,9 @@ const styles = () => ({
     title: {
       paddingTop: theme.spacing(2),
       paddingBottom: theme.spacing(3)
+    },
+    total: {
+        fontWeight: 'bold'
     }
 })
 
@@ -170,13 +196,17 @@ class TransferContainer extends React.Component {
 
     async newDeposit() {
         const { store } = this.props
-        if (!store.get('localWeb3')) return initLocalWeb3()
-        // if (!store.get('localWeb3') || !store.get('space')) return initLocalWeb3()
+        // if (!store.get('localWeb3')) return initLocalWeb3()
+        if (!store.get('localWeb3') || !store.get('space')) return initLocalWeb3()
 
         const amount = store.get('convert.amount')
         const destination = store.get('convert.destination')
         const network = store.get('selectedNetwork')
         const asset = store.get('convert.selectedFormat')
+        const maxSlippage = store.get('convert.maxSlippage')
+        const exchangeRate = store.get('convert.exchangeRate')
+        const expectedTotal = store.get('convert.conversionTotal')
+        const minSwapProceeds = Number((Number(expectedTotal) * Number(1 - maxSlippage)).toFixed(6))
 
         const tx = {
             id: 'tx-' + Math.floor(Math.random() * (10 ** 16)),
@@ -184,6 +214,7 @@ class TransferContainer extends React.Component {
             instant: false,
             awaiting: 'btc-init',
             sourceAsset: 'btc',
+            sourceAmount: '',
             sourceNetwork: 'bitcoin',
             sourceNetworkVersion: network,
             destAddress: destination,
@@ -194,6 +225,9 @@ class TransferContainer extends React.Component {
             destTxConfs: 0,
             amount: amount,
             error: false,
+            swapReverted: false,
+            minSwapProceeds: minSwapProceeds,
+            // minSwapProceeds: 100
             // txHash: '',
         }
 
@@ -205,12 +239,16 @@ class TransferContainer extends React.Component {
 
     async newWithdraw() {
         const { store } = this.props
-        if (!store.get('localWeb3')) return initLocalWeb3()
+        // if (!store.get('localWeb3')) return initLocalWeb3()
+        if (!store.get('localWeb3') || !store.get('space')) return initLocalWeb3()
 
         const amount = store.get('convert.amount')
         const destination = store.get('convert.destination')
         const network = store.get('selectedNetwork')
         const asset = store.get('convert.selectedFormat')
+        const maxSlippage = store.get('convert.maxSlippage')
+        const exchangeRate = store.get('convert.exchangeRate')
+        const minSwapProceeds = Number((Number(amount * exchangeRate) * Number(1 - maxSlippage)).toFixed(6))
 
         const tx = {
             id: 'tx-' + Math.floor(Math.random() * (10 ** 16)),
@@ -218,6 +256,7 @@ class TransferContainer extends React.Component {
             instant: false,
             awaiting: 'eth-settle',
             sourceAsset: asset,
+            sourceAmount: amount,
             sourceNetwork: 'ethereum',
             sourceNetworkVersion: network,
             sourceTxHash: '',
@@ -228,6 +267,8 @@ class TransferContainer extends React.Component {
             destAsset: 'btc',
             amount: amount,
             error: false,
+            minSwapProceeds: minSwapProceeds,
+            // minSwapProceeds: 100
             // txHash: ''
         }
 
@@ -282,6 +323,8 @@ class TransferContainer extends React.Component {
         const sourceAsset = selectedDirection ? 'WBTC' : 'BTC'
         const destAsset = selectedDirection ? 'BTC' : 'WBTC'
 
+        const maxSlippage = store.get('convert.maxSlippage')
+
 
         // console.log('transfer render', store.getState())
 
@@ -318,7 +361,11 @@ class TransferContainer extends React.Component {
                                     <Grid item xs={12}>
                                         <CurrencyInput
                                             onAmountChange={(value)=>{
-                                                store.set('convert.amount', value)
+                                                let amount = value
+                                                if (value < 0) {
+                                                    amount = ''
+                                                }
+                                                store.set('convert.amount', amount)
                                                 gatherFeeData()
                                             }}
                                             onCurrencyChange={()=>{}}
@@ -346,7 +393,11 @@ class TransferContainer extends React.Component {
                                     <Grid item xs={12}>
                                         <CurrencyInput
                                             onAmountChange={(value)=>{
-                                                store.set('convert.amount', value)
+                                                let amount = value
+                                                if (value < 0) {
+                                                    amount = ''
+                                                }
+                                                store.set('convert.amount', amount)
                                                 gatherFeeData()
                                             }}
                                             onCurrencyChange={()=>{}}
@@ -361,8 +412,11 @@ class TransferContainer extends React.Component {
                                             variant="outlined"
                                             onChange={(event) => {
                                                 store.set('convert.destination', event.target.value)
-                                                store.set('convert.destinationValid', true)
-                                                // store.set('convert.destinationValid', AddressValidator.validate(event.target.value, 'BTC'))
+                                                store.set('convert.destinationValid', AddressValidator.validate(
+                                                    event.target.value,
+                                                    selectedDirection ? 'BTC' : 'ETH',
+                                                    selectedNetwork === 'testnet' ? 'testnet' : 'prod'
+                                                ))
                                             }}
                                         />
                                     </Grid>
@@ -384,9 +438,31 @@ class TransferContainer extends React.Component {
                                             <span>{NAME_MAP[selectedAsset]} Fee</span>
                                             <span className={classes.amt}>{fee && amount ? `${fee} BTC` : '-'}</span>
                                         </Grid>
-                                        <Grid container justify='space-between'>
+                                        <Grid container justify='space-between' className={classes.total}>
                                             <span>You Will Receive</span>
                                             <span className={classes.amt}>{total && amount ? `~${total} ${destAsset}` : '-'}</span>
+                                        </Grid>
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+
+                            <Grid item xs={12}>
+                                <Grid container direction='column' className={classes.slippage}>
+                                    <Grid item xs={12} className={classes.lineItem}>
+                                        <Grid container justify='space-between'>
+                                            <span>Max. slippage</span>
+                                            <div className={classes.slippageRate}>
+                                                {[0.005, 0.01, 0.05].map(r => {
+                                                    const label = `${r * 100}%`
+                                                    if (maxSlippage === r) {
+                                                        return <span>{label}</span>
+                                                    } else {
+                                                        return <ActionLink onClick={() => {
+                                                            store.set('convert.maxSlippage', r)
+                                                        }}>{label}</ActionLink>
+                                                    }
+                                                })}
+                                            </div>
                                         </Grid>
                                     </Grid>
                                 </Grid>
