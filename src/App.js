@@ -44,7 +44,7 @@ import {
 } from './utils/web3Utils'
 
 firebase.initializeApp({
-  apiKey: 'AIzaSyCL5ON0RDsxhj1lVjj97IcT0i0a0JmbztI',
+  apiKey: process.env.FB_API_KEY,
   authDomain: window.location.hostname,
   projectId: 'wbtc-portal'
 })
