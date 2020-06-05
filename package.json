@@ -16,6 +16,7 @@
     "bignumber.js": "^9.0.0",
     "classnames": "^2.2.6",
     "crypto-js": "^4.0.0",
+    "dotenv": "^8.2.0",
     "eth-crypto": "^1.4.0",
     "ethereumjs-tx": "^2.1.2",
     "ethereumjs-util": "^6.1.0",

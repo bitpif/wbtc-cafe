@@ -43,8 +43,10 @@ import {
     CURVE_MAIN
 } from './utils/web3Utils'
 
+require('dotenv').config()
+
 firebase.initializeApp({
-  apiKey: process.env.FB_API_KEY,
+  apiKey: process.env.REACT_APP_FB_KEY,
   authDomain: window.location.hostname,
   projectId: 'wbtc-portal'
 })
