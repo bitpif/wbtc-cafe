@@ -13,27 +13,33 @@ import {
 // Changing TX State
 export const addTx = (tx) => {
     const store = getStore()
+    const db = store.get('db')
+    const localWeb3Address = store.get('localWeb3Address')
     const storeString = 'convert.transactions'
     let txs = store.get(storeString)
     txs.push(tx)
     store.set(storeString, txs)
-
-    const space = store.get('space')
-    // console.log('space', space)
-
-    if (space) {
-        space.public.set(storeString, JSON.stringify(txs))
-    }
 
     // use localStorage
     localStorage.setItem(storeString, JSON.stringify(txs))
 
     // for debugging
     window.txs = txs
+
+    try {
+        db.collection("transactions").doc(tx.id).set({
+            user: localWeb3Address,
+            id: tx.id,
+            data: JSON.stringify(tx)
+        })
+    } catch(e) {
+        console.log(e)
+    }
 }
 
 export const updateTx = (newTx) => {
     const store = getStore()
+    const db = store.get('db')
     const storeString = 'convert.transactions'
     const txs = store.get(storeString).map(t => {
         if (t.id === newTx.id) {
@@ -44,37 +50,46 @@ export const updateTx = (newTx) => {
     })
     store.set(storeString, txs)
 
-    const space = store.get('space')
-    if (space) {
-        space.public.set(storeString, JSON.stringify(txs))
-    }
-
     // use localStorage
     localStorage.setItem(storeString, JSON.stringify(txs))
 
     // for debugging
     window.txs = txs
+
+    try {
+        db.collection("transactions")
+            .doc(newTx.id)
+            .update({
+                data: JSON.stringify(newTx)
+            })
+    } catch(e) {
+        console.log(e)
+    }
 
     return newTx
 }
 
 export const removeTx = (tx) => {
     const store = getStore()
+    const db = store.get('db')
     const storeString = 'convert.transactions'
     let txs = store.get(storeString).filter(t => (t.id !== tx.id))
     // console.log(txs)
     store.set(storeString, txs)
-
-    const space = store.get('space')
-    if (space) {
-        space.public.set(storeString, JSON.stringify(txs))
-    }
 
     // use localStorage
     localStorage.setItem(storeString, JSON.stringify(txs))
 
     // for debugging
     window.txs = txs
+
+    try {
+        db.collection("transactions")
+            .doc(tx.id)
+            .delete()
+    } catch(e) {
+        console.log(e)
+    }
 }
 
 export const getTx = function(id) {
@@ -142,7 +157,7 @@ export const gatherFeeData = async function() {
     const fixedFeeKey = selectedDirection ? 'release' : 'lock'
     const dynamicFeeKey = selectedDirection ? 'burn' : 'mint'
 
-    const fixedFee = Number(fees[selectedAsset][fixedFeeKey] / (10 ** 8))
+    const fixedFee = Number(fees[selectedAsset][fixedFeeKey] / (10 ** 8)).toFixed(8)
     const dynamicFeeRate = Number(fees[selectedAsset].ethereum[dynamicFeeKey] / 10000)
 
     if (!amount || !dataWeb3 || !fees) return
@@ -159,7 +174,7 @@ export const gatherFeeData = async function() {
             const swapResult = await curve.methods.get_dy(1, 0, amountInSats).call() / (10 ** 8)
             exchangeRate = Number(swapResult / amount).toFixed(4)
             renVMFee = (Number(swapResult) * dynamicFeeRate).toFixed(8)
-            total = Number(swapResult-renVMFee-fixedFee) > 0 ? Number(swapResult-renVMFee-fixedFee).toFixed(6) : '0.000000'
+            total = Number(swapResult-renVMFee-fixedFee) > 0 ? Number(swapResult-renVMFee-fixedFee).toFixed(8) : '0.000000'
         } else {
             renVMFee = (Number(amount) * dynamicFeeRate).toFixed(8)
             const amountAfterMint = Number(amount-renVMFee-fixedFee) > 0 ? Number(amount-renVMFee-fixedFee) : 0
@@ -170,10 +185,10 @@ export const gatherFeeData = async function() {
             if (amountAfterMintInSats) {
                 const swapResult = await curve.methods.get_dy(0, 1, amountAfterMintInSats).call() / (10 ** 8)
                 exchangeRate = Number(swapResult / amountAfterMint).toFixed(4)
-                total = Number(swapResult).toFixed(6)
+                total = Number(swapResult).toFixed(8)
             } else {
                 exchangeRate = Number(0).toFixed(4)
-                total = Number(0).toFixed(6)
+                total = Number(0).toFixed(8)
             }
         }
 

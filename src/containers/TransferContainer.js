@@ -196,8 +196,8 @@ class TransferContainer extends React.Component {
 
     async newDeposit() {
         const { store } = this.props
-        // if (!store.get('localWeb3')) return initLocalWeb3()
-        if (!store.get('localWeb3') || !store.get('space')) return initLocalWeb3()
+        if (!store.get('localWeb3')) return initLocalWeb3()
+        // if (!store.get('localWeb3') || !store.get('space')) return initLocalWeb3()
 
         const amount = store.get('convert.amount')
         const destination = store.get('convert.destination')
@@ -239,8 +239,8 @@ class TransferContainer extends React.Component {
 
     async newWithdraw() {
         const { store } = this.props
-        // if (!store.get('localWeb3')) return initLocalWeb3()
-        if (!store.get('localWeb3') || !store.get('space')) return initLocalWeb3()
+        if (!store.get('localWeb3')) return initLocalWeb3()
+        // if (!store.get('localWeb3') || !store.get('space')) return initLocalWeb3()
 
         const amount = store.get('convert.amount')
         const destination = store.get('convert.destination')

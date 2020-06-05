@@ -1,5 +1,4 @@
 import React from 'react';
-import Box from '3box';
 import { createStore, withStore } from '@spyna/react-store'
 import { storeListener } from './services/storeService'
 import queryString from 'query-string'
@@ -30,6 +29,8 @@ import Table from '@material-ui/core/Table';
 
 import RenSDK from "@renproject/ren";
 
+import firebase from 'firebase'
+
 import {
     ZBTC_MAIN,
     ZBTC_TEST,
@@ -38,8 +39,15 @@ import {
     ADAPTER_TEST,
     BTC_SHIFTER_MAIN,
     BTC_SHIFTER_TEST,
-    CURVE_TEST
+    CURVE_TEST,
+    CURVE_MAIN
 } from './utils/web3Utils'
+
+firebase.initializeApp({
+  apiKey: 'AIzaSyCL5ON0RDsxhj1lVjj97IcT0i0a0JmbztI',
+  authDomain: window.location.hostname,
+  projectId: 'wbtc-portal'
+})
 
 const styles = () => ({
   container: {
@@ -89,6 +97,7 @@ const initialState = {
     sdk: null,
     fees: null,
     queryParams: {},
+    db: firebase.firestore(),
 
     // navigation
     selectedTab: 1,
@@ -141,11 +150,20 @@ class AppWrapper extends React.Component {
 
         initDataWeb3()
         updateRenVMFees()
+
+        // authenticate anonymously with firestore
+        try {
+            const auth = await firebase.auth().signInAnonymously()
+            console.log('auth', auth)
+        } catch(e) {
+            console.log(e)
+        }
     }
 
     render() {
         const classes = this.props.classes
         storeListener(this.props.store)
+        const selectedNetwork = this.props.store.get('selectedNetwork')
 
         // console.log(this.props.store.getState())
 
@@ -173,7 +191,7 @@ class AppWrapper extends React.Component {
                         <a target='_blank' href={'https://renproject.io'}>
                           <img className={classes.footerLogo} src={RenVM} />
                         </a>
-                        <Typography className={classes.footerLinks} variant='caption'><a target='_blank' href={'https://kovan.etherscan.io/address/' + ADAPTER_TEST}>Contract</a> <a target='_blank' href={'https://kovan.etherscan.io/address/' + CURVE_TEST}>Liquidity Pool</a></Typography>
+                        <Typography className={classes.footerLinks} variant='caption'><a target='_blank' href={'https://' + (selectedNetwork === 'testnet' ? 'kovan.' : '') + 'etherscan.io/address/' + (selectedNetwork === 'testnet' ? ADAPTER_TEST : ADAPTER_MAIN)}>Contract</a> <a target='_blank' href={'https://' + (selectedNetwork === 'testnet' ? 'kovan.' : '') + 'etherscan.io/address/' + (selectedNetwork === 'testnet' ? CURVE_TEST : CURVE_MAIN)}>Liquidity Pool</a> <a target='_blank' href={'https://www.curve.fi/ren'}>Swap renBTC → WBTC</a></Typography>
                     </Grid>
                   </Container>
                 </Grid>
