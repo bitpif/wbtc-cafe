@@ -1,0 +1,23 @@
+{
+  "files": {
+    "main.css": "/static/css/main.b79f1b1d.chunk.css",
+    "main.js": "/static/js/main.78989a0f.chunk.js",
+    "main.js.map": "/static/js/main.78989a0f.chunk.js.map",
+    "runtime~main.js": "/static/js/runtime~main.16ecac12.js",
+    "runtime~main.js.map": "/static/js/runtime~main.16ecac12.js.map",
+    "static/js/2.2d5f817b.chunk.js": "/static/js/2.2d5f817b.chunk.js",
+    "static/js/2.2d5f817b.chunk.js.map": "/static/js/2.2d5f817b.chunk.js.map",
+    "index.html": "/index.html",
+    "precache-manifest.d0c05d75a5d36e73dc994328dbadf328.js": "/precache-manifest.d0c05d75a5d36e73dc994328dbadf328.js",
+    "service-worker.js": "/service-worker.js",
+    "static/css/main.b79f1b1d.chunk.css.map": "/static/css/main.b79f1b1d.chunk.css.map",
+    "static/media/btc.png": "/static/media/btc.ae796dc4.png",
+    "static/media/dai.png": "/static/media/dai.42d0a1b9.png",
+    "static/media/eth.png": "/static/media/eth.86976a92.png",
+    "static/media/renvm-powered.svg": "/static/media/renvm-powered.e597e332.svg",
+    "static/media/scrypt.node": "/static/media/scrypt.c0d79bf4.node",
+    "static/media/wbtc-logo.svg": "/static/media/wbtc-logo.4c022ae6.svg",
+    "static/media/wbtc.png": "/static/media/wbtc.af995ef6.png",
+    "static/media/zec.jpg": "/static/media/zec.7037fa89.jpg"
+  }
+}
