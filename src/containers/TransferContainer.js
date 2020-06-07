@@ -207,6 +207,7 @@ class TransferContainer extends React.Component {
         const exchangeRate = store.get('convert.exchangeRate')
         const expectedTotal = store.get('convert.conversionTotal')
         const minSwapProceeds = Number((Number(expectedTotal) * Number(1 - maxSlippage)).toFixed(6))
+        const adapterAddress = store.get('convert.adapterAddress')
 
         const tx = {
             id: 'tx-' + Math.floor(Math.random() * (10 ** 16)),
@@ -227,6 +228,7 @@ class TransferContainer extends React.Component {
             error: false,
             swapReverted: false,
             minSwapProceeds: minSwapProceeds,
+            adapterAddress
             // minSwapProceeds: 100
             // txHash: '',
         }
@@ -249,6 +251,7 @@ class TransferContainer extends React.Component {
         const maxSlippage = store.get('convert.maxSlippage')
         const exchangeRate = store.get('convert.exchangeRate')
         const minSwapProceeds = Number((Number(amount * exchangeRate) * Number(1 - maxSlippage)).toFixed(6))
+        const adapterAddress = store.get('convert.adapterAddress')
 
         const tx = {
             id: 'tx-' + Math.floor(Math.random() * (10 ** 16)),

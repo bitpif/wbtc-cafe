@@ -1,6 +1,7 @@
 import Web3 from "web3";
 import RenSDK from "@renproject/ren";
 import Web3Modal from 'web3modal'
+import firebase from 'firebase'
 
 import BTC from '../assets/btc.png'
 import ETH from '../assets/eth.png'
@@ -149,6 +150,7 @@ export const initLocalWeb3 = async function() {
     const store = getStore()
     const selectedNetwork = store.get('selectedNetwork')
     const db = store.get('db')
+    const fsUser = store.get('fsUser')
     store.set('spaceError', false)
 
     const providerOptions = {}
@@ -163,6 +165,9 @@ export const initLocalWeb3 = async function() {
     const web3 = new Web3(provider)
     const currentProvider = web3.currentProvider
     const accounts = await web3.eth.getAccounts()
+    const address = accounts[0]
+    const addressLowerCase = address.toLowerCase()
+
     let network = ''
     if (currentProvider.networkVersion === '1') {
         network = 'mainnet'
@@ -178,55 +183,97 @@ export const initLocalWeb3 = async function() {
 
 
     store.set('localWeb3', web3)
-    store.set('localWeb3Address', accounts[0])
+    store.set('localWeb3Address', address)
     store.set('localWeb3Network', network)
 
-    // console.log(currentProvider);
+    // console.log(fsUser);
 
     try {
+        let signature = ''
+
+        // get from local storage if user has signed in already
+        const localSigMap = localStorage.getItem('sigMap')
+        const localSigMapData = localSigMap ? JSON.parse(localSigMap) : {}
+        if (localSigMapData[addressLowerCase]) {
+            signature = localSigMapData[addressLowerCase]
+        } else {
+            // get unique wallet signature for firebase backup
+            signature = await web3.eth.personal.sign(web3.utils.utf8ToHex("Signing in to WBTC Cafe"), addressLowerCase)
+            localSigMapData[addressLowerCase] = signature
+            localStorage.setItem('sigMap', JSON.stringify(localSigMapData))
+        }
+
+        store.set('fsSignature', signature)
+
+        // update user collection
+        const doc = await db.collection("users").doc(fsUser.user.uid)
+        const docData = await doc.get()
+        // console.log(docData)
+        if (docData.exists) {
+            const data = docData.data()
+            if (data.signatures.indexOf(signature) < 0) {
+                // add a new signature if needed
+                doc.update({
+                    signatures: data.signatures.concat([signature]),
+                    updated: firebase.firestore.Timestamp.fromDate(new Date(Date.now()))
+                })
+            }
+        } else {
+            // create user
+            doc.set({
+                uid: fsUser.user.uid,
+                updated: firebase.firestore.Timestamp.fromDate(new Date(Date.now())),
+                signatures: [signature]
+            })
+        }
+
         // recover from localStorage
         const lsData = localStorage.getItem('convert.transactions')
         const lsTransactions = lsData ? JSON.parse(lsData) : []
         const lsIds = lsTransactions.map(t => t.id)
 
-        const fsDataSnapshot = await db.collection("transactions")
-            .where("user", "==", accounts[0]).get()
+        // request within fb rate limit
+        setTimeout(async () => {
+            const fsDataSnapshot = await db.collection("transactions")
+                .where("walletSignature", "==", signature).get()
 
-        let fsTransactions = []
-        if (!fsDataSnapshot.empty) {
-            fsDataSnapshot.forEach(doc => {
-                const tx = JSON.parse(doc.data().data)
-                fsTransactions.push(tx)
+            let fsTransactions = []
+            if (!fsDataSnapshot.empty) {
+                fsDataSnapshot.forEach(doc => {
+                    const tx = JSON.parse(doc.data().data)
+                    fsTransactions.push(tx)
+                })
+            }
+            // console.log('fsTransactions', fsTransactions)
+            const uniqueFsTransactions = fsTransactions.filter(btx => lsIds.indexOf(btx.id) < 0)
+            const transactions = lsTransactions.concat(uniqueFsTransactions)
+            store.set('convert.transactions', transactions)
+
+            // if (network === 'testnet') {
+              watchWalletData()
+              gatherFeeData()
+              initMonitoring()
+            // }
+
+            // listen for changes
+            currentProvider.on('accountsChanged', async () => {
+                resetWallet()
+                initLocalWeb3()
             })
-        }
-        const uniqueFsTransactions = fsTransactions.filter(btx => lsIds.indexOf(btx.id) < 0)
-        const transactions = lsTransactions.concat(uniqueFsTransactions)
-        store.set('convert.transactions', transactions)
 
-        // if (network === 'testnet') {
-          watchWalletData()
-          gatherFeeData()
-          initMonitoring()
-        // }
+            currentProvider.on('chainChanged', async () => {
+                resetWallet()
+                initLocalWeb3()
+            })
 
-        // listen for changes
-        currentProvider.on('accountsChanged', async () => {
-            resetWallet()
-            initLocalWeb3()
-        })
-
-        currentProvider.on('chainChanged', async () => {
-            resetWallet()
-            initLocalWeb3()
-        })
-
-        currentProvider.on('networkChanged', async () => {
-            resetWallet()
-            initLocalWeb3()
-        })
+            currentProvider.on('networkChanged', async () => {
+                resetWallet()
+                initLocalWeb3()
+            })
+        }, 1000)
     } catch(e) {
         store.set('spaceError', true)
-        console.log(e)
+        // console.log(e)
     }
 
     return

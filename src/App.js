@@ -100,6 +100,8 @@ const initialState = {
     fees: null,
     queryParams: {},
     db: firebase.firestore(),
+    fsUser: null,
+    fsSignature: null,
 
     // navigation
     selectedTab: 1,
@@ -155,8 +157,9 @@ class AppWrapper extends React.Component {
 
         // authenticate anonymously with firestore
         try {
-            const auth = await firebase.auth().signInAnonymously()
-            console.log('auth', auth)
+            const user = await firebase.auth().signInAnonymously()
+            // console.log('auth', user)
+            store.set('fsUser', user)
         } catch(e) {
             console.log(e)
         }

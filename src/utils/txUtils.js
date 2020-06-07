@@ -2,7 +2,7 @@ import RenJS from "@renproject/ren";
 import adapterABI from "../utils/adapterCurveABI.json";
 import sha256 from 'crypto-js/sha256';
 import Base64 from 'crypto-js/enc-base64';
-
+import firebase from 'firebase'
 import curveABI from "../utils/curveABI.json";
 import { getStore } from '../services/storeService'
 import {
@@ -12,9 +12,15 @@ import {
 
 // Changing TX State
 export const addTx = (tx) => {
+    // add timestamps
+    const timestamp = firebase.firestore.Timestamp.fromDate(new Date(Date.now()))
+    tx.created = timestamp
+    tx.updated = timestamp
+
     const store = getStore()
     const db = store.get('db')
     const localWeb3Address = store.get('localWeb3Address')
+    const fsSignature = store.get('fsSignature')
     const storeString = 'convert.transactions'
     let txs = store.get(storeString)
     txs.push(tx)
@@ -28,8 +34,10 @@ export const addTx = (tx) => {
 
     try {
         db.collection("transactions").doc(tx.id).set({
-            user: localWeb3Address,
+            user: localWeb3Address.toLowerCase(),
+            walletSignature: fsSignature,
             id: tx.id,
+            updated: timestamp,
             data: JSON.stringify(tx)
         })
     } catch(e) {
@@ -38,6 +46,9 @@ export const addTx = (tx) => {
 }
 
 export const updateTx = (newTx) => {
+    // update timestamp
+    newTx.updated = firebase.firestore.Timestamp.fromDate(new Date(Date.now()))
+
     const store = getStore()
     const db = store.get('db')
     const storeString = 'convert.transactions'
@@ -60,7 +71,8 @@ export const updateTx = (newTx) => {
         db.collection("transactions")
             .doc(newTx.id)
             .update({
-                data: JSON.stringify(newTx)
+                data: JSON.stringify(newTx),
+                updated: newTx.updated
             })
     } catch(e) {
         console.log(e)
