@@ -77,6 +77,19 @@ const styles = () => ({
   transfersContainer: {
     padding: theme.spacing(3)
   },
+  disclosure: {
+      '& div': {
+          border: '0.5px solid ' + theme.palette.divider,
+          background: '#fff',
+          // height: '100%',
+          paddingTop: theme.spacing(1.5),
+          paddingBottom: theme.spacing(1),
+          paddingLeft: theme.spacing(2),
+          paddingRight: theme.spacing(2),
+          fontSize: 12
+      },
+      // '& '
+  }
 })
 
 const initialState = {
@@ -139,7 +152,7 @@ const initialState = {
     'convert.networkFee': '',
     'convert.renVMFee': '',
     'convert.conversionTotal': '',
-    'convert.maxSlippage': 0.005
+    'convert.maxSlippage': 0.005,
 }
 
 class AppWrapper extends React.Component {
@@ -184,7 +197,13 @@ class AppWrapper extends React.Component {
                 <SwapRevertModalContainer />
                 <NavContainer />
                   <Container size='lg'>
+
                     <Grid container className={classes.contentContainer} spacing={2}>
+                      <Grid item xs={12} className={classes.disclosure}>
+                        <div>
+                            <marquee scrollamount={6}>Welcome to the WBTC Cafe! We're currently in beta, so please use caution.</marquee>
+                        </div>
+                      </Grid>
                       <Grid item xs={12} sm={12} md={4}>
                         <TransferContainer />
                       </Grid>

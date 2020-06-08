@@ -60,7 +60,8 @@ class CurrencyInput extends React.Component {
             currency: '',
             open: false
         }
-        this.anchorEl = React.createRef();
+        this.anchorEl = React.createRef()
+        this.defaultInputRef = React.createRef()
     }
 
     handleOpen() {
@@ -84,7 +85,8 @@ class CurrencyInput extends React.Component {
             classes,
             onCurrencyChange,
             onAmountChange,
-            items
+            items,
+            inputRef
         } = this.props
 
         const {
@@ -107,6 +109,7 @@ class CurrencyInput extends React.Component {
                     onAmountChange(Number(event.target.value))
                 }
             }}
+            inputRef={inputRef || this.defaultInputRef}
             type='number'
             InputProps={{
                 endAdornment: items && items.length && items.length > 1 ? <InputAdornment position="end">

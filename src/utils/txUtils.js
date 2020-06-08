@@ -202,7 +202,7 @@ export const gatherFeeData = async function() {
             const amountAfterMint = Number(amount-renVMFee-fixedFee) > 0 ? Number(amount-renVMFee-fixedFee) : 0
             const amountAfterMintInSats = Math.round(RenJS.utils.value(amountAfterMint, "btc").sats().toNumber())
 
-            console.log(amountAfterMintInSats, renVMFee, fixedFee)
+            // console.log(amountAfterMintInSats, renVMFee, fixedFee)
 
             if (amountAfterMintInSats) {
                 const swapResult = await curve.methods.get_dy(0, 1, amountAfterMintInSats).call() / (10 ** 8)

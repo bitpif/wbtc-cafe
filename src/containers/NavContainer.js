@@ -9,7 +9,7 @@ import { resetWallet, setNetwork, initLocalWeb3 } from '../utils/walletUtils'
 
 import Web3 from "web3";
 import EthCrypto from 'eth-crypto'
-import Box from '3box';
+// import Box from '3box';
 import Portis from '@portis/web3';
 import Torus from "@toruslabs/torus-embed";
 

@@ -219,14 +219,14 @@ export const initLocalWeb3 = async function() {
             const data = docData.data()
             if (data.signatures.indexOf(signature) < 0) {
                 // add a new signature if needed
-                doc.update({
+                await doc.update({
                     signatures: data.signatures.concat([signature]),
                     updated: firebase.firestore.Timestamp.fromDate(new Date(Date.now()))
                 })
             }
         } else {
             // create user
-            doc.set({
+            await doc.set({
                 uid: fsUser.user.uid,
                 updated: firebase.firestore.Timestamp.fromDate(new Date(Date.now())),
                 signatures: [signature]

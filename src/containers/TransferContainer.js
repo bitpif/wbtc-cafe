@@ -6,6 +6,7 @@ import classNames from 'classnames'
 import RenSDK from "@renproject/ren";
 import sb from "satoshi-bitcoin"
 import AddressValidator from "wallet-address-validator";
+import NumberFormat from 'react-number-format'
 import { createTransaction, submitToEthereum } from '../utils/renUtils'
 import {
     addTx,
@@ -139,8 +140,9 @@ const styles = () => ({
         paddingBottom: 0,
         marginTop: theme.spacing(1),
         display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
         marginBottom: theme.spacing(3),
-        flexDirection:'column',
         '& span': {
             marginBottom: theme.spacing(1)
         }
@@ -170,6 +172,22 @@ const styles = () => ({
     },
     total: {
         fontWeight: 'bold'
+    },
+    customSlippage: {
+        width: 30,
+        fontSize: 12,
+        marginTop: -4,
+        marginLeft: theme.spacing(1)
+    },
+    amountContainer: {
+        flex: 1
+    },
+    maxLink: {
+        fontSize: 12,
+        textDecoration: 'underline',
+        cursor: 'pointer',
+        paddingLeft: theme.spacing(1),
+        paddingTop: theme.spacing(0.5)
     }
 })
 
@@ -178,6 +196,7 @@ class TransferContainer extends React.Component {
     constructor(props) {
         super(props);
         this.state = props.store.getState()
+        this.wbtcAmountRef = React.createRef()
     }
 
     componentDidMount() {
@@ -327,7 +346,8 @@ class TransferContainer extends React.Component {
         const destAsset = selectedDirection ? 'BTC' : 'WBTC'
 
         const maxSlippage = store.get('convert.maxSlippage')
-
+        const slippageOptions = [0.005, 0.01, 0.05]
+        const customSlippageValue = slippageOptions.indexOf(maxSlippage) > -1 ? maxSlippage : 0
 
         // console.log('transfer render', store.getState())
 
@@ -394,17 +414,27 @@ class TransferContainer extends React.Component {
                             {selectedDirection === 1 && <React.Fragment>
                                 <Grid alignItems="center" container>
                                     <Grid item xs={12}>
-                                        <CurrencyInput
-                                            onAmountChange={(value)=>{
-                                                let amount = value
-                                                if (value < 0) {
-                                                    amount = ''
-                                                }
-                                                store.set('convert.amount', amount)
-                                                gatherFeeData()
-                                            }}
-                                            onCurrencyChange={()=>{}}
-                                            items={['WBTC']} />
+                                        <Grid container direction='row' alignItems='center'>
+                                            <Grid item className={classes.amountContainer}>
+                                                <CurrencyInput
+                                                    inputRef={this.wbtcAmountRef}
+                                                    onAmountChange={(value)=>{
+                                                        let amount = value
+                                                        if (value < 0) {
+                                                            amount = ''
+                                                        }
+                                                        store.set('convert.amount', amount)
+                                                        gatherFeeData()
+                                                    }}
+                                                    onCurrencyChange={()=>{}}
+                                                    items={['WBTC']} />
+                                            </Grid>
+                                            <ActionLink className={classes.maxLink}
+                                                onClick={() => {
+                                                    this.wbtcAmountRef.current.value = store.get('wbtcBalance')
+                                                    // console.log(this.wbtcAmountRef.current.value)
+                                                }}>Max</ActionLink>
+                                        </Grid>
                                     </Grid>
                                     <Grid item xs={12}>
                                         <TextField
@@ -455,7 +485,7 @@ class TransferContainer extends React.Component {
                                         <Grid container justify='space-between'>
                                             <span>Max. slippage</span>
                                             <div className={classes.slippageRate}>
-                                                {[0.005, 0.01, 0.05].map(r => {
+                                                {slippageOptions.map(r => {
                                                     const label = `${r * 100}%`
                                                     if (maxSlippage === r) {
                                                         return <span>{label}</span>
@@ -465,6 +495,24 @@ class TransferContainer extends React.Component {
                                                         }}>{label}</ActionLink>
                                                     }
                                                 })}
+                                                <NumberFormat
+                                                    className={classes.customSlippage}
+                                                    decimalScale={2}
+                                                    suffix={'%'}
+                                                    allowLeadingZeros={true}
+                                                    allowNegative={false}
+                                                    onValueChange={values => {
+                                                        const float = values.floatValue
+                                                        if (!float) {
+                                                            store.set('convert.maxSlippage', slippageOptions[0])
+                                                        } else if (float > 100) {
+                                                            store.set('convert.maxSlippage', 1)
+                                                        } else {
+                                                            store.set('convert.maxSlippage', Number((float / 100).toFixed(4)))
+                                                        }
+                                                    }}
+                                                />
+
                                             </div>
                                         </Grid>
                                     </Grid>

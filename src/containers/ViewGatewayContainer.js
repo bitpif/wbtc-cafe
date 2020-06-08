@@ -8,9 +8,11 @@ import DetectNetwork from "web3-detect-network";
 import { createTransaction, submitToEthereum } from '../utils/renUtils'
 import { initBrowserWallet } from '../utils/walletUtils'
 import { removeTx } from '../utils/txUtils'
+import ActionLink from '../components/ActionLink'
+
 import Web3 from "web3";
 import EthCrypto from 'eth-crypto'
-import Box from '3box';
+// import Box from '3box';
 import Portis from '@portis/web3';
 import Torus from "@toruslabs/torus-embed";
 
@@ -85,7 +87,19 @@ const styles = () => ({
       padding: theme.spacing(1),
       border: '1px solid ' + theme.palette.divider,
       width: '100%',
-      fontWeight: 'bold'
+      fontWeight: 'bold',
+      width: '100%'
+    },
+    addressWrapper: {
+        width: '100%',
+        position: 'relative',
+        display: 'flex'
+    },
+    copyLink: {
+        textDecoration: 'underline',
+        cursor: 'pointer',
+        fontSize: 12,
+        marginTop: theme.spacing(1)
     }
 })
 
@@ -152,9 +166,26 @@ class ViewGatewayContainer extends React.Component {
                                   Send {gatewayModalTx.amount} BTC to:
                               </Typography>
 
-                              <Typography variant='body1' className={classes.address}>
+                              {/*<Typography variant='body1' className={classes.address}>
                                   {gatewayModalTx.renBtcAddress || 'Loading...'}
-                              </Typography>
+                              </Typography>*/}
+
+                              <div className={classes.addressWrapper}>
+                                  <input readonly id='gatewayAddress'
+                                    className={classes.address}
+                                    value={gatewayModalTx.renBtcAddress || 'Loading...'}/>
+                              </div>
+
+                              <ActionLink className={classes.copyLink}
+                                onClick={() => {
+                                    const copyText = document.getElementById("gatewayAddress")
+                                    copyText.select()
+                                    copyText.setSelectionRange(0, 99999)
+                                    document.execCommand("copy")
+                                    alert("Address copied to clipboard: " + copyText.value)
+                                }}>
+                                    Copy Address
+                              </ActionLink>
 
                               <Button
                                   variant="outlined"
