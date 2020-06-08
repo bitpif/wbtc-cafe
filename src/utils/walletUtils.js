@@ -195,6 +195,12 @@ export const initLocalWeb3 = async function() {
     try {
         store.set('loadingTransactions', true)
 
+        const accepted = window.confirm('Please take note that this is beta software and is provided on an "as is" and "as available" basis. WBTC Cafe does not give any warranties and will not be liable for any loss, direct or indirect through continued use of this site.')
+
+        if (!accepted) {
+            throw 'Disclosure declined'
+        }
+
         let signature = ''
 
         // get from local storage if user has signed in already

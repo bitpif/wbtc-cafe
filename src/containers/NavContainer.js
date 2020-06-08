@@ -2,45 +2,24 @@ import React from 'react';
 import { withStore } from '@spyna/react-store'
 import { withStyles } from '@material-ui/styles';
 import theme from '../theme/theme'
-import classNames from 'classnames'
-import RenSDK from "@renproject/ren";
-import { createTransaction, submitToEthereum } from '../utils/renUtils'
-import { resetWallet, setNetwork, initLocalWeb3 } from '../utils/walletUtils'
 
-import Web3 from "web3";
-import EthCrypto from 'eth-crypto'
-// import Box from '3box';
-import Portis from '@portis/web3';
-import Torus from "@toruslabs/torus-embed";
+import { initLocalWeb3 } from '../utils/walletUtils'
+
 
 import WBTCIcon from '../assets/wbtc-logo.svg';
-import AccountIcon from '@material-ui/icons/AccountCircle';
-import WifiIcon from '@material-ui/icons/Wifi';
 
 import Container from '@material-ui/core/Container';
 import Grid from '@material-ui/core/Grid';
 import Button from '@material-ui/core/Button';
-import Input from '@material-ui/core/Input';
-import TextField from '@material-ui/core/TextField';
 import Typography from '@material-ui/core/Typography';
-import Modal from '@material-ui/core/Modal';
-import Backdrop from '@material-ui/core/Backdrop';
-import Fade from '@material-ui/core/Fade';
 
-import ClickAwayListener from '@material-ui/core/ClickAwayListener';
-import Grow from '@material-ui/core/Grow';
-import Paper from '@material-ui/core/Paper';
-import Popper from '@material-ui/core/Popper';
-import MenuItem from '@material-ui/core/MenuItem';
-import MenuList from '@material-ui/core/MenuList';
-import InfoIcon from '@material-ui/icons/Info';
 
 const styles = () => ({
     navContainer: {
         paddingTop: theme.spacing(4),
         paddingBottom: theme.spacing(4),
         minHeight: 52,
-        borderBottom: '1px solid ' + theme.palette.divider,
+        borderBottom: '0.5px solid ' + theme.palette.divider,
         backgroundColor: '#fff'
     },
     logo: {
