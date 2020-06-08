@@ -102,6 +102,7 @@ const initialState = {
     db: firebase.firestore(),
     fsUser: null,
     fsSignature: null,
+    loadingTransactions: false,
 
     // navigation
     selectedTab: 1,

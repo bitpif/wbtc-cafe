@@ -60,7 +60,7 @@ class TransactionsTableContainer extends React.Component {
         const transactions = store.get('convert.transactions')
             .filter(t => t.sourceNetworkVersion === selectedNetwork)
         const localWeb3Address = store.get('localWeb3Address')
-        const space = store.get('space')
+        const loadingTransactions = store.get('loadingTransactions')
         const spaceError = store.get('spaceError')
 
 
@@ -78,7 +78,7 @@ class TransactionsTableContainer extends React.Component {
               </TableRow>
             </TableHead>
             <TableBody>
-              {localWeb3Address && transactions.map((tx, i) => {
+              {localWeb3Address && !loadingTransactions && transactions.map((tx, i) => {
                 const destAsset = tx.swapReverted ? 'RENBTC' : tx.destAsset.toUpperCase()
                 const sourceAsset = tx.sourceAsset.toUpperCase()
                 return <TableRow key={i}>
@@ -96,15 +96,15 @@ class TransactionsTableContainer extends React.Component {
           {!localWeb3Address && <div className={classes.emptyMessage}>
               <Typography variant='caption'>Please <ActionLink onClick={initLocalWeb3}>connect wallet</ActionLink> to view transactions</Typography>
           </div>}
-          {/*localWeb3Address && !space && <div className={classes.emptyMessage}>
-              {spaceError ? <Typography variant='caption'>Connection to 3box failed. <ActionLink onClick={initLocalWeb3}>Retry</ActionLink></Typography> : <Typography variant='caption'>Loading transactions...</Typography>}
+          {loadingTransactions && <div className={classes.emptyMessage}>
+              {spaceError ? <Typography variant='caption'>Sign in failed. <ActionLink onClick={initLocalWeb3}>Retry</ActionLink></Typography> : <Typography variant='caption'>Loading transactions...</Typography>}
           </div>}
-          {localWeb3Address && space && !transactions.length && <div className={classes.emptyMessage}>
+          {localWeb3Address && !loadingTransactions && !transactions.length && <div className={classes.emptyMessage}>
+              <Typography variant='caption'>No transactions</Typography>
+          </div>}
+          {/*localWeb3Address && !transactions.length && <div className={classes.emptyMessage}>
               <Typography variant='caption'>No transactions</Typography>
           </div>*/}
-          {localWeb3Address && !transactions.length && <div className={classes.emptyMessage}>
-              <Typography variant='caption'>No transactions</Typography>
-          </div>}
         </div>
     }
 }

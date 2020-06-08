@@ -182,7 +182,6 @@ export const initLocalWeb3 = async function() {
         return
     }
 
-
     store.set('localWeb3', web3)
     store.set('localWeb3Address', address)
     store.set('localWeb3Network', network)
@@ -190,6 +189,8 @@ export const initLocalWeb3 = async function() {
     // console.log(fsUser);
 
     try {
+        store.set('loadingTransactions', true)
+
         let signature = ''
 
         // get from local storage if user has signed in already
@@ -251,6 +252,8 @@ export const initLocalWeb3 = async function() {
             const transactions = fsTransactions.concat(uniqueLsTransactions)
             store.set('convert.transactions', transactions)
 
+            store.set('loadingTransactions', false)
+
             // if (network === 'testnet') {
               watchWalletData()
               gatherFeeData()
@@ -275,6 +278,7 @@ export const initLocalWeb3 = async function() {
         }, 1000)
     } catch(e) {
         store.set('spaceError', true)
+        store.set('loadingTransactions', true)
         // console.log(e)
     }
 
