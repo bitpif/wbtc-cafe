@@ -19,6 +19,7 @@ export const addTx = (tx) => {
 
     const store = getStore()
     const db = store.get('db')
+    const fsEnabled = store.get('fsEnabled')
     const localWeb3Address = store.get('localWeb3Address')
     const fsSignature = store.get('fsSignature')
     const storeString = 'convert.transactions'
@@ -32,16 +33,18 @@ export const addTx = (tx) => {
     // for debugging
     window.txs = txs
 
-    try {
-        db.collection("transactions").doc(tx.id).set({
-            user: localWeb3Address.toLowerCase(),
-            walletSignature: fsSignature,
-            id: tx.id,
-            updated: timestamp,
-            data: JSON.stringify(tx)
-        })
-    } catch(e) {
-        console.log(e)
+    if (fsEnabled) {
+        try {
+            db.collection("transactions").doc(tx.id).set({
+                user: localWeb3Address.toLowerCase(),
+                walletSignature: fsSignature,
+                id: tx.id,
+                updated: timestamp,
+                data: JSON.stringify(tx)
+            })
+        } catch(e) {
+            console.log(e)
+        }
     }
 }
 
@@ -51,6 +54,7 @@ export const updateTx = (newTx) => {
 
     const store = getStore()
     const db = store.get('db')
+    const fsEnabled = store.get('fsEnabled')
     const storeString = 'convert.transactions'
     const txs = store.get(storeString).map(t => {
         if (t.id === newTx.id) {
@@ -67,15 +71,17 @@ export const updateTx = (newTx) => {
     // for debugging
     window.txs = txs
 
-    try {
-        db.collection("transactions")
-            .doc(newTx.id)
-            .update({
-                data: JSON.stringify(newTx),
-                updated: newTx.updated
-            })
-    } catch(e) {
-        console.log(e)
+    if (fsEnabled) {
+        try {
+            db.collection("transactions")
+                .doc(newTx.id)
+                .update({
+                    data: JSON.stringify(newTx),
+                    updated: newTx.updated
+                })
+        } catch(e) {
+            console.log(e)
+        }
     }
 
     return newTx
@@ -84,6 +90,7 @@ export const updateTx = (newTx) => {
 export const removeTx = (tx) => {
     const store = getStore()
     const db = store.get('db')
+    const fsEnabled = store.get('fsEnabled')
     const storeString = 'convert.transactions'
     let txs = store.get(storeString).filter(t => (t.id !== tx.id))
     // console.log(txs)
@@ -95,12 +102,15 @@ export const removeTx = (tx) => {
     // for debugging
     window.txs = txs
 
-    try {
-        db.collection("transactions")
-            .doc(tx.id)
-            .delete()
-    } catch(e) {
-        console.log(e)
+
+    if (fsEnabled) {
+        try {
+            db.collection("transactions")
+                .doc(tx.id)
+                .delete()
+        } catch(e) {
+            console.log(e)
+        }
     }
 }
 

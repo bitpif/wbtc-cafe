@@ -152,7 +152,6 @@ export const initLocalWeb3 = async function() {
     const selectedNetwork = store.get('selectedNetwork')
     const db = store.get('db')
     const fsUser = store.get('fsUser')
-    store.set('spaceError', false)
 
     const providerOptions = {}
 
@@ -186,7 +185,10 @@ export const initLocalWeb3 = async function() {
     store.set('localWeb3Address', address)
     store.set('localWeb3Network', network)
 
-    // console.log(fsUser);
+    // recover from localStorage
+    const lsData = localStorage.getItem('convert.transactions')
+    const lsTransactions = lsData ? JSON.parse(lsData) : []
+    const lsIds = lsTransactions.map(t => t.id)
 
     try {
         store.set('loadingTransactions', true)
@@ -229,11 +231,6 @@ export const initLocalWeb3 = async function() {
             })
         }
 
-        // recover from localStorage
-        const lsData = localStorage.getItem('convert.transactions')
-        const lsTransactions = lsData ? JSON.parse(lsData) : []
-        const lsIds = lsTransactions.map(t => t.id)
-
         // request within fb rate limit
         setTimeout(async () => {
             const fsDataSnapshot = await db.collection("transactions")
@@ -252,6 +249,7 @@ export const initLocalWeb3 = async function() {
             const transactions = fsTransactions.concat(uniqueLsTransactions)
             store.set('convert.transactions', transactions)
 
+            store.set('fsEnabled', true)
             store.set('loadingTransactions', false)
 
             // if (network === 'testnet') {
@@ -277,9 +275,11 @@ export const initLocalWeb3 = async function() {
             })
         }, 1000)
     } catch(e) {
-        store.set('spaceError', true)
-        store.set('loadingTransactions', true)
-        // console.log(e)
+        // go with just local transactions
+        store.get('convert.transactions', lsTransactions)
+        store.set('loadingTransactions', false)
+
+        console.log(e)
     }
 
     return
