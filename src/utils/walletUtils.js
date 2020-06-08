@@ -152,6 +152,7 @@ export const initLocalWeb3 = async function() {
     const selectedNetwork = store.get('selectedNetwork')
     const db = store.get('db')
     const fsUser = store.get('fsUser')
+    const disclosureAccepted = store.get('disclosureAccepted')
 
     const providerOptions = {}
 
@@ -195,10 +196,14 @@ export const initLocalWeb3 = async function() {
     try {
         store.set('loadingTransactions', true)
 
-        const accepted = window.confirm('Please take note that this is beta software and is provided on an "as is" and "as available" basis. WBTC Cafe does not give any warranties and will not be liable for any loss, direct or indirect through continued use of this site.')
+        if (!disclosureAccepted) {
+            const ok = window.confirm('Please take note that this is beta software and is provided on an "as is" and "as available" basis. WBTC Cafe does not give any warranties and will not be liable for any loss, direct or indirect through continued use of this site.')
 
-        if (!accepted) {
-            throw 'Disclosure declined'
+            store.set('disclosureAccepted', ok)
+
+            if (!ok) {
+                throw new Error('Disclosure declined')
+            }
         }
 
         let signature = ''
@@ -268,18 +273,21 @@ export const initLocalWeb3 = async function() {
 
                 // listen for changes
                 currentProvider.on('accountsChanged', async () => {
-                    resetWallet()
-                    initLocalWeb3()
+                    window.location.reload()
+                    // resetWallet()
+                    // initLocalWeb3()
                 })
 
                 currentProvider.on('chainChanged', async () => {
-                    resetWallet()
-                    initLocalWeb3()
+                    window.location.reload()
+                    // resetWallet()
+                    // initLocalWeb3()
                 })
 
                 currentProvider.on('networkChanged', async () => {
-                    resetWallet()
-                    initLocalWeb3()
+                    window.location.reload()
+                    // resetWallet()
+                    // initLocalWeb3()
                 })
             } catch(e) {
               store.set('loadingTransactions', false)

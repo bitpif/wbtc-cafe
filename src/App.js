@@ -118,6 +118,7 @@ const initialState = {
     fsSignature: null,
     fsEnabled: false,
     loadingTransactions: false,
+    disclosureAccepted: false,
 
     // navigation
     selectedTab: 1,
