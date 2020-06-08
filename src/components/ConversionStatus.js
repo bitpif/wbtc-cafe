@@ -27,6 +27,9 @@ const ConversionStatus = function(props) {
                 {tx.awaiting === 'ren-settle' ? <span>
                     {`Submitting to RenVM`}
                 </span> : null}
+                {tx.awaiting === 'eth-init' ? <span>
+                    {`Submit to Ethereum`}
+                </span> : null}
                 {tx.awaiting === 'eth-settle' ? <span>
                     {tx.error ? `Submit to Ethereum` : `Submitting to Ethereum`}
                 </span> : null}

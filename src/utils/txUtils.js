@@ -288,46 +288,49 @@ export const completeConvertToEthereum = async function(transaction, approveSwap
     // if swap will revert to renBTC, let the user know before proceeding
     const exchangeRate = await getExchangeRate(tx)
     const expectedProceeds = Number(sourceAmount * exchangeRate)
-    console.log(exchangeRate, expectedProceeds, minSwapProceeds)
+    // console.log(exchangeRate, expectedProceeds, minSwapProceeds)
     if (!approveSwap && expectedProceeds < minSwapProceeds) {
+        // console.log('showing modal')
         store.set('swapRevertModalTx', tx)
-        store.set('showSwapRevertModal', true)
         store.set('swapRevertModalExchangeRate', exchangeRate)
-        updateTx(Object.assign(tx, { awaiting: 'eth-settle', error: true }))
+        store.set('showSwapRevertModal', true)
+        updateTx(Object.assign(tx, { awaiting: 'eth-init' }))
         return
     }
 
-    if (!tx.destTxHash) {
-        updateTx(Object.assign(tx, {
-            awaiting: 'eth-settle',
-        }))
-        try {
-            await adapterContract.methods.mintThenSwap(
-                params.contractCalls[0].contractParams[0].value,
-                params.contractCalls[0].contractParams[1].value,
-                utxoAmount,
-                renResponse.autogen.nhash,
-                renSignature
-            ).send({
-                from: localWeb3Address
-            })
-            .on('transactionHash', hash => {
-                console.log(hash)
-                const newTx = updateTx(Object.assign(tx, {
-                    destTxHash: hash,
-                    error: false
-                }))
-                monitorMintTx(newTx)
-            })
+    // setTimeout(async () => {
+        if (!tx.destTxHash) {
+            updateTx(Object.assign(tx, {
+                awaiting: 'eth-settle',
+            }))
+            try {
+                await adapterContract.methods.mintThenSwap(
+                    params.contractCalls[0].contractParams[0].value,
+                    params.contractCalls[0].contractParams[1].value,
+                    utxoAmount,
+                    renResponse.autogen.nhash,
+                    renSignature
+                ).send({
+                    from: localWeb3Address
+                })
+                .on('transactionHash', hash => {
+                    console.log(hash)
+                    const newTx = updateTx(Object.assign(tx, {
+                        destTxHash: hash,
+                        error: false
+                    }))
+                    monitorMintTx(newTx)
+                })
 
-            store.set('convert.pendingConvertToEthereum', pending.filter(p => p !== id))
-        } catch(e) {
-            console.log(e)
-            updateTx(Object.assign(tx, { error: true }))
+                store.set('convert.pendingConvertToEthereum', pending.filter(p => p !== id))
+            } catch(e) {
+                console.log(e)
+                updateTx(Object.assign(tx, { error: true }))
+            }
+        } else {
+            monitorMintTx(getTx(tx.id))
         }
-    } else {
-        monitorMintTx(getTx(tx.id))
-    }
+    // }, 1000)
 }
 
 export const initMint = function(tx) {
@@ -410,12 +413,14 @@ export const initConvertToEthereum = async function(tx) {
     // ren already exposed a signature
     if (renResponse && renSignature && !error) {
         // sometimes api calls fail when loading the page
+        // setTimeout(() => {
         completeConvertToEthereum.bind(this)(tx)
+        // }, 1000)
     } else {
         // create or re-create shift in
         const mint = await initMint.bind(this)(tx)
 
-        console.log('initConvertToEthereum mint', mint, tx)
+        // console.log('initConvertToEthereum mint', mint, tx)
 
         if (!params) {
             addTx(Object.assign(tx, {
@@ -433,8 +438,12 @@ export const initConvertToEthereum = async function(tx) {
                 vOut: sourceTxVOut
             })
         } else {
+            // console.log('waiting for deposit')
             deposit = await mint
-                .wait(targetConfs)
+                .wait(targetConfs, sourceTxHash && sourceTxVOut ? {
+                    txHash: sourceTxHash,
+                    vOut: sourceTxVOut
+                } : null)
                 .on("deposit", dep => {
                     // console.log('on deposit', dep)
                     if (dep.utxo) {

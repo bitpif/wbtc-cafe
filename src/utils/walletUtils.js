@@ -19,7 +19,8 @@ import {
 
 import {
     initMonitoring,
-    gatherFeeData
+    gatherFeeData,
+    updateTx
 } from './txUtils'
 
 import { getStore } from '../services/storeService'
@@ -244,9 +245,10 @@ export const initLocalWeb3 = async function() {
                     fsTransactions.push(tx)
                 })
             }
-            // console.log('fsTransactions', fsTransactions)
-            const uniqueFsTransactions = fsTransactions.filter(btx => lsIds.indexOf(btx.id) < 0)
-            const transactions = lsTransactions.concat(uniqueFsTransactions)
+            const fsIds = fsTransactions.map(f => f.id)
+
+            const uniqueLsTransactions = lsTransactions.filter(ltx => fsIds.indexOf(ltx.id) < 0)
+            const transactions = fsTransactions.concat(uniqueLsTransactions)
             store.set('convert.transactions', transactions)
 
             // if (network === 'testnet') {

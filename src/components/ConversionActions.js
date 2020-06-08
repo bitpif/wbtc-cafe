@@ -41,7 +41,7 @@ const ConversionActions = function(props) {
         {direction === 'out' && tx.sourceTxHash && tx.awaiting === 'eth-settle' ? <a className={classes.viewLink} target='_blank' href={'https://' + (tx.sourceNetworkVersion === 'testnet' ? 'kovan.' : '') + 'etherscan.io/tx/'+tx.sourceTxHash}>View Transaction</a> : null}
         {direction === 'out' && tx.awaiting === '' && tx.destAddress && <a className={classes.viewLink} target='_blank' href={`https://sochain.com/address/BTC${tx.destNetworkVersion === 'testnet' ? 'TEST' : ''}/${tx.destAddress}`}>View BTC Transaction</a>}
 
-        {tx.error && tx.awaiting === 'eth-settle' && <React.Fragment>
+        {(tx.error && tx.awaiting === 'eth-settle' || tx.awaiting === 'eth-init') && <React.Fragment>
             <a className={classes.viewLink} onClick={() => {
                 if (direction === 'out') {
                     initConvertFromEthereum(tx)
