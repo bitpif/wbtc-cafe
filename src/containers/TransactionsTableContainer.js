@@ -60,9 +60,14 @@ class TransactionsTableContainer extends React.Component {
         const transactions = store.get('convert.transactions')
             .filter(t => t.sourceNetworkVersion === selectedNetwork)
         const localWeb3Address = store.get('localWeb3Address')
-        const loadingTransactions = store.get('loadingTransactions')
-        const spaceError = store.get('spaceError')
+        const fsSignature = store.get('fsSignature')
 
+        const signedIn = fsSignature
+        const hasTransactions = transactions.length > 0
+        const loadingTransactions = store.get('loadingTransactions')
+        const error = store.get('walletConnectError')
+
+        const showTransactions = signedIn && !loadingTransactions && !error && transactions.length > 0
 
         return <div className={classes.container}>
           {/*<div className={classes.titleWrapper}>
@@ -78,7 +83,7 @@ class TransactionsTableContainer extends React.Component {
               </TableRow>
             </TableHead>
             <TableBody>
-              {localWeb3Address && !loadingTransactions && transactions.map((tx, i) => {
+              {showTransactions && transactions.map((tx, i) => {
                 const destAsset = tx.swapReverted ? 'RENBTC' : tx.destAsset.toUpperCase()
                 const sourceAsset = tx.sourceAsset.toUpperCase()
                 return <TableRow key={i}>
@@ -93,15 +98,32 @@ class TransactionsTableContainer extends React.Component {
               })}
             </TableBody>
           </Table>
-          {!localWeb3Address && <div className={classes.emptyMessage}>
-              <Typography variant='caption'>Please <ActionLink onClick={initLocalWeb3}>connect wallet</ActionLink> to view transactions</Typography>
+          {!showTransactions && <div className={classes.emptyMessage}>
+              {loadingTransactions ?
+                      <Typography variant='caption'>Loading transactions...</Typography>
+                  : <React.Fragment>
+                      {error ?
+                        <Typography variant='caption'>Sign in failed. <ActionLink onClick={initLocalWeb3}>Retry</ActionLink></Typography>
+                      : signedIn && !transactions.length ?
+                        <Typography variant='caption'>No transactions</Typography>
+                      : !signedIn ?
+                        <Typography variant='caption'>Please <ActionLink onClick={initLocalWeb3}>connect wallet</ActionLink> to view transactions</Typography>
+                      : null}
+                  </React.Fragment>}
           </div>}
-          {loadingTransactions && <div className={classes.emptyMessage}>
-              {spaceError ? <Typography variant='caption'>Sign in failed. <ActionLink onClick={initLocalWeb3}>Retry</ActionLink></Typography> : <Typography variant='caption'>Loading transactions...</Typography>}
+
+          {/*!signedIn && <div className={classes.emptyMessage}>
+              {error ?
+                <Typography variant='caption'>Sign in failed. <ActionLink onClick={initLocalWeb3}>Retry</ActionLink></Typography>
+              : loadingTransactions ? <Typography variant='caption'>Loading transactions...</Typography> :
+              <Typography variant='caption'>Please <ActionLink onClick={initLocalWeb3}>connect wallet</ActionLink> to view transactions</Typography>}
           </div>}
-          {localWeb3Address && !loadingTransactions && !transactions.length && <div className={classes.emptyMessage}>
-              <Typography variant='caption'>No transactions</Typography>
+          {signedIn && loadingTransactions && <div className={classes.emptyMessage}>
+              {<Typography variant='caption'>Loading transactions...</Typography>}
           </div>}
+          {signedIn && !loadingTransactions && !transactions.length && <div className={classes.emptyMessage}>
+              {error ? <Typography variant='caption'>Sign in failed. <ActionLink onClick={initLocalWeb3}>Retry</ActionLink></Typography> : <Typography variant='caption'>No transactions</Typography>}
+          </div>*/}
           {/*localWeb3Address && !transactions.length && <div className={classes.emptyMessage}>
               <Typography variant='caption'>No transactions</Typography>
           </div>*/}

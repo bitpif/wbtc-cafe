@@ -168,6 +168,8 @@ export const initLocalWeb3 = async function() {
     const address = accounts[0]
     const addressLowerCase = address.toLowerCase()
 
+    store.set('walletConnectError', false)
+
     let network = ''
     if (currentProvider.networkVersion === '1') {
         network = 'mainnet'
@@ -231,53 +233,51 @@ export const initLocalWeb3 = async function() {
             })
         }
 
-        // request within fb rate limit
-        setTimeout(async () => {
-            const fsDataSnapshot = await db.collection("transactions")
-                .where("walletSignature", "==", signature).get()
+        const fsDataSnapshot = await db.collection("transactions")
+            .where("walletSignature", "==", signature).get()
 
-            let fsTransactions = []
-            if (!fsDataSnapshot.empty) {
-                fsDataSnapshot.forEach(doc => {
-                    const tx = JSON.parse(doc.data().data)
-                    fsTransactions.push(tx)
-                })
-            }
-            const fsIds = fsTransactions.map(f => f.id)
-
-            const uniqueLsTransactions = lsTransactions.filter(ltx => fsIds.indexOf(ltx.id) < 0)
-            const transactions = fsTransactions.concat(uniqueLsTransactions)
-            store.set('convert.transactions', transactions)
-
-            store.set('fsEnabled', true)
-            store.set('loadingTransactions', false)
-
-            // if (network === 'testnet') {
-              watchWalletData()
-              gatherFeeData()
-              initMonitoring()
-            // }
-
-            // listen for changes
-            currentProvider.on('accountsChanged', async () => {
-                resetWallet()
-                initLocalWeb3()
+        let fsTransactions = []
+        if (!fsDataSnapshot.empty) {
+            fsDataSnapshot.forEach(doc => {
+                const tx = JSON.parse(doc.data().data)
+                fsTransactions.push(tx)
             })
+        }
+        const fsIds = fsTransactions.map(f => f.id)
 
-            currentProvider.on('chainChanged', async () => {
-                resetWallet()
-                initLocalWeb3()
-            })
+        const uniqueLsTransactions = lsTransactions.filter(ltx => fsIds.indexOf(ltx.id) < 0)
+        const transactions = fsTransactions.concat(uniqueLsTransactions)
+        store.set('convert.transactions', transactions)
 
-            currentProvider.on('networkChanged', async () => {
-                resetWallet()
-                initLocalWeb3()
-            })
-        }, 1000)
-    } catch(e) {
-        // go with just local transactions
-        store.get('convert.transactions', lsTransactions)
+        store.set('fsEnabled', true)
         store.set('loadingTransactions', false)
+
+        // if (network === 'testnet') {
+          watchWalletData()
+          gatherFeeData()
+          initMonitoring()
+        // }
+
+        // listen for changes
+        currentProvider.on('accountsChanged', async () => {
+            resetWallet()
+            initLocalWeb3()
+        })
+
+        currentProvider.on('chainChanged', async () => {
+            resetWallet()
+            initLocalWeb3()
+        })
+
+        currentProvider.on('networkChanged', async () => {
+            resetWallet()
+            initLocalWeb3()
+        })
+    } catch(e) {
+        // // go with just local transactions
+        // store.get('convert.transactions', lsTransactions)
+        store.set('loadingTransactions', false)
+        store.set('walletConnectError', true)
 
         console.log(e)
     }

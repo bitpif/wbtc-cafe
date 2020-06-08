@@ -90,6 +90,7 @@ const initialState = {
     localWeb3: null,
     localWeb3Address: '',
     localWeb3Network: '',
+    walletConnectError: false,
     box: null,
     space: null,
     spaceError: false,
