@@ -373,12 +373,12 @@ export const initMint = function(tx) {
             {
                 name: "_minExchangeRate",
                 type: "uint256",
-                value: localWeb3.utils.toWei(minExchangeRate)
+                value: RenJS.utils.value(minExchangeRate, "btc").sats().toNumber().toFixed(0)
             },
             {
                 name: "_slippage",
                 type: "uint256",
-                value: Number(maxSlippage * 1000).toFixed(0)
+                value: Number(maxSlippage * 10000).toFixed(0)
             },
             {
                 name: "_wbtcDestination",
@@ -635,6 +635,7 @@ export const initMonitoring = function() {
 }
 
 window.getTaggedTxs = getTaggedTxs
+window.RenJS = RenJS
 
 export default {
     addTx,

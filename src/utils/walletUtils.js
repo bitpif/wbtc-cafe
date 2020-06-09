@@ -144,7 +144,7 @@ export const watchWalletData = async function() {
 export const initDataWeb3 = async function() {
    const store = getStore()
    const network = store.get('selectedNetwork')
-   store.set('dataWeb3', new Web3(`https://${network === 'testnet' ? 'kovan' : 'mainnet'}.infura.io/v3/7be66f167c2e4a05981e2ffc4653dec2`))
+   store.set('dataWeb3', new Web3(`https://${network === 'testnet' ? 'kovan' : 'mainnet'}.infura.io/v3/6de9092ee3284217bb744cc1a6daab94`))
 }
 
 export const initLocalWeb3 = async function() {
