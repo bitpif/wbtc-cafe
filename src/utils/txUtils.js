@@ -316,7 +316,9 @@ export const completeConvertToEthereum = async function(transaction, approveSwap
             try {
                 await adapterContract.methods.mintThenSwap(
                     params.contractCalls[0].contractParams[0].value,
+                    params.contractCalls[0].contractParams[0].value,
                     params.contractCalls[0].contractParams[1].value,
+                    params.contractCalls[0].contractParams[2].value,
                     utxoAmount,
                     renResponse.autogen.nhash,
                     renSignature
@@ -349,11 +351,15 @@ export const initMint = function(tx) {
       amount,
       params,
       destAddress,
-      minSwapProceeds
+      minSwapProceeds,
+      minExchangeRate,
+      maxSlippage
     } = tx
     const store = getStore()
     const {
-        sdk
+        sdk,
+        localWeb3,
+        localWeb3Address
     } = store.getState()
 
     let adapterAddress = ''
@@ -365,14 +371,24 @@ export const initMint = function(tx) {
         contractFn = 'mintThenSwap'
         contractParams = [
             {
-                name: "_minWbtcAmount",
+                name: "_minExchangeRate",
                 type: "uint256",
-                value: RenJS.utils.value(minSwapProceeds, "btc").sats().toNumber()
+                value: localWeb3.utils.toWei(minExchangeRate)
+            },
+            {
+                name: "_slippage",
+                type: "uint256",
+                value: Number(maxSlippage * 1000).toFixed(0)
             },
             {
                 name: "_wbtcDestination",
                 type: "address",
                 value: destAddress
+            },
+            {
+                name: "_msgSender",
+                type: "address",
+                value: localWeb3Address
             }
         ]
     }

@@ -3,22 +3,17 @@ import { withStore } from '@spyna/react-store'
 import { withStyles } from '@material-ui/styles';
 import theme from '../theme/theme'
 import classNames from 'classnames'
-import RenSDK from "@renproject/ren";
-import DetectNetwork from "web3-detect-network";
-import { createTransaction, submitToEthereum } from '../utils/renUtils'
-import { initBrowserWallet, NAME_MAP } from '../utils/walletUtils'
-import { initConvertToEthereum, initMint, completeConvertToEthereum } from '../utils/txUtils'
+import { NAME_MAP } from '../utils/walletUtils'
+import { initConvertToEthereum, completeConvertToEthereum } from '../utils/txUtils'
 
 import Grid from '@material-ui/core/Grid';
 import Button from '@material-ui/core/Button';
-import Input from '@material-ui/core/Input';
-import TextField from '@material-ui/core/TextField';
+
 import Typography from '@material-ui/core/Typography';
 import Modal from '@material-ui/core/Modal';
 import Backdrop from '@material-ui/core/Backdrop';
 import Fade from '@material-ui/core/Fade';
 import Divider from '@material-ui/core/Divider';
-import ArrowForwardIcon from '@material-ui/icons/ArrowForward';
 import SnackbarContent from '@material-ui/core/SnackbarContent';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Checkbox from '@material-ui/core/Checkbox';

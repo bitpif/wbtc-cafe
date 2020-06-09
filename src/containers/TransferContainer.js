@@ -3,37 +3,25 @@ import { withStore } from '@spyna/react-store'
 import { withStyles } from '@material-ui/styles';
 import theme from '../theme/theme'
 import classNames from 'classnames'
-import RenSDK from "@renproject/ren";
-import sb from "satoshi-bitcoin"
 import AddressValidator from "wallet-address-validator";
 import NumberFormat from 'react-number-format'
-import { createTransaction, submitToEthereum } from '../utils/renUtils'
 import {
     addTx,
     updateTx,
     removeTx,
-    initMonitoring,
-    initConvertToEthereum,
     initConvertFromEthereum,
-    initTransfer,
     gatherFeeData
 } from '../utils/txUtils'
 import { MINI_ICON_MAP, NAME_MAP, initLocalWeb3, setWbtcAllowance } from '../utils/walletUtils'
-import Web3 from "web3";
-import { ethers } from 'ethers';
 
 import Grid from '@material-ui/core/Grid';
 import Button from '@material-ui/core/Button';
-import Input from '@material-ui/core/Input';
 import TextField from '@material-ui/core/TextField';
-import Typography from '@material-ui/core/Typography';
 import ToggleButton from '@material-ui/lab/ToggleButton';
 import ToggleButtonGroup from '@material-ui/lab/ToggleButtonGroup';
 
 import CurrencyInput from '../components/CurrencyInput';
 import ActionLink from '../components/ActionLink';
-
-import adapterABI from "../utils/adapterABI.json";
 
 const styles = () => ({
     container: {
@@ -246,6 +234,8 @@ class TransferContainer extends React.Component {
             amount: amount,
             error: false,
             swapReverted: false,
+            minExchangeRate: exchangeRate,
+            maxSlippage: maxSlippage,
             minSwapProceeds: minSwapProceeds,
             adapterAddress
             // minSwapProceeds: 100
@@ -289,6 +279,8 @@ class TransferContainer extends React.Component {
             destAsset: 'btc',
             amount: amount,
             error: false,
+            minExchangeRate: exchangeRate,
+            maxSlippage: maxSlippage,
             minSwapProceeds: minSwapProceeds,
             // minSwapProceeds: 100
             // txHash: ''
