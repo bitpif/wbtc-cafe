@@ -215,17 +215,32 @@ export const initLocalWeb3 = async function() {
             signature = localSigMapData[addressLowerCase]
         } else {
             // get unique wallet signature for firebase backup
-            signature = await web3.eth.personal.sign(web3.utils.utf8ToHex("Signing in to WBTC Cafe"), addressLowerCase)
+            const sig = await web3.eth.personal.sign(web3.utils.utf8ToHex("Signing in to WBTC Cafe"), addressLowerCase)
+            signature = web3.utils.sha3(sig)
             localSigMapData[addressLowerCase] = signature
             localStorage.setItem('sigMap', JSON.stringify(localSigMapData))
         }
 
         store.set('fsSignature', signature)
 
+        // auth with firestore
+        let fsUser;
+        try {
+            fsUser = await firebase.auth()
+                .signInWithEmailAndPassword(`${addressLowerCase}@wbtc.cafe`, signature)
+        } catch(e) {
+            console.log(e)
+            console.log('new user')
+            fsUser = await firebase.auth()
+                .createUserWithEmailAndPassword(`${addressLowerCase}@wbtc.cafe`, signature)
+        }
+
+        store.set('fsUser', fsUser)
+
         // update user collection
         const doc = await db.collection("users").doc(fsUser.user.uid)
         const docData = await doc.get()
-        // console.log(docData)
+        // console.log('docData', docData)
         if (docData.exists) {
             const data = docData.data()
             if (data.signatures.indexOf(signature) < 0) {

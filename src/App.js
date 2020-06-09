@@ -50,6 +50,7 @@ firebase.initializeApp({
   authDomain: window.location.hostname,
   projectId: 'wbtc-portal'
 })
+firebase.firestore().enablePersistence()
 
 const styles = () => ({
   container: {
@@ -171,15 +172,6 @@ class AppWrapper extends React.Component {
 
         initDataWeb3()
         updateRenVMFees()
-
-        // authenticate anonymously with firestore
-        try {
-            const user = await firebase.auth().signInAnonymously()
-            // console.log('auth', user)
-            store.set('fsUser', user)
-        } catch(e) {
-            console.log(e)
-        }
     }
 
     render() {
