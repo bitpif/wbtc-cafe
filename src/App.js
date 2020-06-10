@@ -69,7 +69,7 @@ const styles = () => ({
     }
   },
   footerLogo: {
-    height: 26,
+    height: 32,
     width: 'auto',
     marginRight: theme.spacing(2),
     // border: '1px solid ' + theme.palette.divider,
@@ -194,7 +194,7 @@ class AppWrapper extends React.Component {
                     <Grid container className={classes.contentContainer} spacing={2}>
                       <Grid item xs={12} className={classes.disclosure}>
                         <div>
-                            <marquee scrollamount={6}>Welcome to the WBTC Cafe! We're currently in beta, so please use caution.</marquee>
+                            <marquee scrollamount={6}>Welcome to the WBTC Cafe! This is a new project, so please use caution.</marquee>
                         </div>
                       </Grid>
                       <Grid item xs={12} sm={12} md={4}>

@@ -8,6 +8,7 @@ import { initLocalWeb3 } from '../utils/walletUtils'
 
 
 import WBTCIcon from '../assets/wbtc-logo.svg';
+import CafeLogo from '../assets/cafe-logo.svg';
 
 import Container from '@material-ui/core/Container';
 import Grid from '@material-ui/core/Grid';
@@ -25,7 +26,7 @@ const styles = () => ({
     },
     logo: {
         height: 22,
-        width: 25,
+        width: 'auto',
         marginRight: theme.spacing(1),
         // [theme.breakpoints.down('xs')]: {
         //     height: 17,
@@ -117,10 +118,15 @@ class NavContainer extends React.Component {
             <Container size='lg'>
               {<Grid  container alignItems='center'>
                 <Grid item xs={12} sm={4}>
-                    <Grid container alignItems='center'>
+                    {/*<Grid container alignItems='center'>
                           {<img className={classes.logo} src={WBTCIcon} />}
                           <Typography className={classes.title}><b>WBTC</b> </Typography>
                           <Typography className={classes.title}><span className={classes.cafe}>Cafe</span></Typography>
+                    </Grid>*/}
+                    <Grid container alignItems='center'>
+                        <div>
+                              <img className={classes.logo} src={CafeLogo} />
+                        </div>
                     </Grid>
                 </Grid>
                 <Grid item xs={12} sm={8}>
