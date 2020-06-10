@@ -13,7 +13,6 @@ import Fade from '@material-ui/core/Fade';
 
 import {
     completeConvertToEthereum,
-    initConvertFromEthereum,
     updateTx
 } from '../utils/txUtils'
 
@@ -234,12 +233,8 @@ class SwapRevertModalContainer extends React.Component {
                     fullWidth={true}
                     className={classNames(classes.button)}
                     onClick={() => {
-                        if (swapRevertModalTx.sourceAsset === 'wbtc') {
-                            initConvertFromEthereum(swapRevertModalTx, true)
-                        } else {
-                            const newTx = updateTx(Object.assign(swapRevertModalTx, { swapReverted: true }))
-                            completeConvertToEthereum(newTx, true)
-                        }
+                        const newTx = updateTx(Object.assign(swapRevertModalTx, { swapReverted: true }))
+                        completeConvertToEthereum(newTx, true)
                         store.set('showSwapRevertModal', false)
                     }}
                     >

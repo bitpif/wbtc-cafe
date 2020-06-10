@@ -33,7 +33,8 @@ const ConversionActions = function(props) {
             }}>View Gateway Address</a>
             <a className={classes.viewLink} onClick={() => {
                 // TODO: are you sure modal
-                removeTx(tx)
+                store.set('showCancelModal', true)
+                store.set('cancelModalTx', tx)
             }}>Cancel</a>
         </React.Fragment>}
         {direction === 'in' && tx.awaiting === 'btc-settle' && tx.sourceTxHash && <a className={classes.viewLink} target='_blank' href={`https://sochain.com/tx/BTC${tx.sourceNetworkVersion === 'testnet' ? 'TEST' : ''}/${tx.sourceTxHash}`}>View BTC Transaction</a>}

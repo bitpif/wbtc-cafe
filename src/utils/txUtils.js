@@ -147,22 +147,29 @@ export const updateRenVMFees = async function() {
     }
 }
 
-export const getExchangeRate = async function(tx) {
+export const getFinalDepositExchangeRate = async function(tx) {
     const store = getStore()
     const dataWeb3 = store.get('dataWeb3')
     const selectedNetwork = store.get('selectedNetwork')
+    const fees = store.get('fees')
     const {
-        amount,
-        sourceAsset
+        sourceAsset,
+        renResponse
     } = tx
 
-    const amountInSats = RenJS.utils.value(amount, "btc").sats().toNumber()
+    // const utxoAmount = renResponse.autogen.amount / (10 ** 8)
+
+    // console.log('tx', tx)
+
+    const utxoAmountInSats = Number(renResponse.autogen.amount)
+    const dynamicFeeRate = Number(fees['btc'].ethereum['mint'] / 10000)
+    const finalAmount = Math.round(utxoAmountInSats * (1 - dynamicFeeRate))
+    // console.log(finalAmount, dynamicFeeRate)
+
     const curve = new dataWeb3.eth.Contract(curveABI, selectedNetwork === 'testnet' ? CURVE_TEST : CURVE_MAIN)
     try {
-        const swapResult = (sourceAsset === 'wbtc' ?
-          await curve.methods.get_dy(1, 0, amountInSats).call() :
-          await curve.methods.get_dy(0, 1, amountInSats).call()) / (10 ** 8)
-        return Number(swapResult / amount)
+        const swapResult = await curve.methods.get_dy(0, 1, finalAmount).call()
+        return Number(swapResult / finalAmount)
     } catch (e) {
         console.log(e)
     }
@@ -179,7 +186,7 @@ export const gatherFeeData = async function() {
     const fixedFeeKey = selectedDirection ? 'release' : 'lock'
     const dynamicFeeKey = selectedDirection ? 'burn' : 'mint'
 
-    const fixedFee = Number(fees[selectedAsset][fixedFeeKey] / (10 ** 8)).toFixed(8)
+    const fixedFee = Number(fees[selectedAsset][fixedFeeKey] / (10 ** 8))
     const dynamicFeeRate = Number(fees[selectedAsset].ethereum[dynamicFeeKey] / 10000)
 
     if (!amount || !dataWeb3 || !fees) return
@@ -195,10 +202,10 @@ export const gatherFeeData = async function() {
         if (selectedDirection) {
             const swapResult = await curve.methods.get_dy(1, 0, amountInSats).call() / (10 ** 8)
             exchangeRate = Number(swapResult / amount)
-            renVMFee = (Number(swapResult) * dynamicFeeRate).toFixed(8)
-            total = Number(swapResult-renVMFee-fixedFee) > 0 ? Number(swapResult-renVMFee-fixedFee).toFixed(8) : '0.000000'
+            renVMFee = (Number(swapResult) * dynamicFeeRate)
+            total = Number(swapResult-renVMFee-fixedFee) > 0 ? Number(swapResult-renVMFee-fixedFee) : '0.000000'
         } else {
-            renVMFee = (Number(amount) * dynamicFeeRate).toFixed(8)
+            renVMFee = (Number(amount) * dynamicFeeRate)
             const amountAfterMint = Number(amount-renVMFee-fixedFee) > 0 ? Number(amount-renVMFee-fixedFee) : 0
             const amountAfterMintInSats = Math.round(RenJS.utils.value(amountAfterMint, "btc").sats().toNumber())
 
@@ -207,10 +214,10 @@ export const gatherFeeData = async function() {
             if (amountAfterMintInSats) {
                 const swapResult = await curve.methods.get_dy(0, 1, amountAfterMintInSats).call() / (10 ** 8)
                 exchangeRate = Number(swapResult / amountAfterMint)
-                total = Number(swapResult).toFixed(8)
+                total = Number(swapResult)
             } else {
                 exchangeRate = Number(0)
-                total = Number(0).toFixed(8)
+                total = Number(0)
             }
         }
 
@@ -242,7 +249,7 @@ export const getTaggedTxs = async function() {
             })
         })
         const data = (await res.json())
-        console.log(data)
+        // console.log(data)
         // console.log('renvm fees', await fees.json())
         // store.set('fees', data)
     } catch(e) {
@@ -259,7 +266,7 @@ export const monitorMintTx = async function(tx) {
     const interval = setInterval(async () => {
         // Get latest tx state every iteration
         const latestTx = getTx(tx.id)
-        console.log('latestTx', latestTx)
+        // console.log('latestTx', latestTx)
 
         // Get transaction details
         const txDetails = await web3.eth.getTransaction(latestTx.destTxHash)
@@ -296,17 +303,17 @@ export const completeConvertToEthereum = async function(transaction, approveSwap
     const userBtcTxAmount = Number((renResponse.in.utxo.amount / (10 ** 8)).toFixed(8))
     // amount in renvm after fixed fee
     const utxoAmountSats = renResponse.autogen.amount
-    const utxoAmount = Number(utxoAmountSats / (10 ** 8))
+
     // update amount to the actual amount sent
     const tx = updateTx(Object.assign(transaction, { sourceAmount: userBtcTxAmount }))
 
-    const { id, params, renSignature, minExchangeRate, maxSlippage } = tx
+    const { id, params, renSignature, minExchangeRate } = tx
     const adapterContract = new localWeb3.eth.Contract(adapterABI, store.get('convert.adapterAddress'))
 
     // if swap will revert to renBTC, let the user know before proceeding
-    const exchangeRate = await getExchangeRate(tx)
+    const exchangeRate = await getFinalDepositExchangeRate(tx)
     updateTx(Object.assign(tx, { exchangeRateOnSubmit: exchangeRate }))
-    // console.log(exchangeRate, expectedProceeds, minSwapProceeds)
+    // console.log(exchangeRate, minExchangeRate)
     if (!approveSwap && exchangeRate < minExchangeRate) {
         // console.log('showing modal')
         store.set('swapRevertModalTx', tx)
@@ -334,7 +341,7 @@ export const completeConvertToEthereum = async function(transaction, approveSwap
                     from: localWeb3Address
                 })
                 .on('transactionHash', hash => {
-                    console.log(hash)
+                    // console.log(hash)
                     const newTx = updateTx(Object.assign(tx, {
                         destTxHash: hash,
                         error: false
@@ -563,7 +570,7 @@ export const monitorBurnTx = async function(tx) {
 
           try {
             const renVMTx = await burn.queryTx()
-            console.log('renVMTx', renVMTx)
+            // console.log('renVMTx', renVMTx)
             if (renVMTx.txStatus === 'done') {
                 updateTx(Object.assign(latestTx, {
                   awaiting: '' ,
@@ -578,7 +585,7 @@ export const monitorBurnTx = async function(tx) {
     }, 1000)
 }
 
-export const initConvertFromEthereum = async function(tx, approveSwap) {
+export const initConvertFromEthereum = async function(tx) {
     const store = getStore()
     const web3 = store.get('localWeb3')
     const adapterAddress = store.get('convert.adapterAddress')
@@ -595,17 +602,6 @@ export const initConvertFromEthereum = async function(tx, approveSwap) {
         updateTx(Object.assign(tx, { error: false }))
     }
 
-    // if swap will revert to renBTC, let the user know before proceeding
-    const exchangeRate = await getExchangeRate(tx)
-    const expectedProceeds = Number(amount * exchangeRate)
-    if (!approveSwap && expectedProceeds < minSwapProceeds) {
-        store.set('swapRevertModalTx', tx)
-        store.set('showSwapRevertModal', true)
-        return
-    }
-
-    console.log('initWithdraw', tx)
-
     try {
         await adapter.methods.swapThenBurn(
             RenJS.utils.BTC.addressToHex(destAddress), //_to
@@ -613,7 +609,7 @@ export const initConvertFromEthereum = async function(tx, approveSwap) {
             RenJS.utils.value(minSwapProceeds, "btc").sats().toNumber()
         ).send({ from })
         .on('transactionHash', hash => {
-            console.log(hash)
+            // console.log(hash)
             updateTx(Object.assign(tx, {
               awaiting: 'eth-settle',
               sourceTxHash: hash,

@@ -189,14 +189,14 @@ class DepositModalContainer extends React.Component {
 
         if (!depositModalTx) return null
 
-        const renFee = store.get('convert.renVMFee')
-        const btcFee = store.get('convert.networkFee')
+        const renFee = Number(store.get('convert.renVMFee')).toFixed(8)
+        const btcFee = Number(store.get('convert.networkFee')).toFixed(8)
 
         // console.log(this.props, this.state)
 
-        const amount = store.get('convert.amount')
-        const exchangeRate = store.get('convert.exchangeRate')
-        const total = store.get('convert.conversionTotal')
+        const amount = Number(store.get('convert.amount')).toFixed(8)
+        const exchangeRate = Number(store.get('convert.exchangeRate')).toFixed(6)
+        const total = Number(store.get('convert.conversionTotal')).toFixed(8)
 
         return <Modal
           aria-labelledby="transition-modal-title"

@@ -301,23 +301,23 @@ class TransferContainer extends React.Component {
         //     depositAmount
         // } = this.state
 
-        const walletAddress = store.get('walletAddress')
-        const transactions = store.get('transactions')
+        // const walletAddress = store.get('walletAddress')
+        // const transactions = store.get('transactions')
         const selectedNetwork = store.get('selectedNetwork')
         const selectedTab  = store.get('selectedTab')
-        const selectedTransferTab  = store.get('selectedTransferTab')
+        // const selectedTransferTab  = store.get('selectedTransferTab')
         const selectedAsset  = store.get('selectedAsset')
-        const showAboutModal = store.get('showAboutModal')
-
-        const depositAmount = store.get('depositAmount')
-        const withdrawAmount = store.get('withdrawAmount')
-        const withdrawAddressValid = store.get('withdrawAddressValid')
-        const transferAmount = store.get('transferAmount')
-        const transferAddressValid = store.get('transferAddressValid')
+        // const showAboutModal = store.get('showAboutModal')
+        //
+        // const depositAmount = store.get('depositAmount')
+        // const withdrawAmount = store.get('withdrawAmount')
+        // const withdrawAddressValid = store.get('withdrawAddressValid')
+        // const transferAmount = store.get('transferAmount')
+        // const transferAddressValid = store.get('transferAddressValid')
 
         const selectedDirection  = store.get('convert.selectedDirection')
 
-        const localWeb3Address = store.get('localWeb3Address')
+        // const localWeb3Address = store.get('localWeb3Address')
         const space = store.get('space')
         const wbtcBalance = store.get('wbtcBalance')
 
@@ -458,15 +458,15 @@ class TransferContainer extends React.Component {
                                         </Grid>
                                         <Grid container justify='space-between'>
                                             <span>RenVM Fee</span>
-                                            <span className={classes.amt}>{renVMFee && amount ? `${renVMFee} BTC` : '-'}</span>
+                                            <span className={classes.amt}>{renVMFee && amount ? `${Number(renVMFee).toFixed(8)} BTC` : '-'}</span>
                                         </Grid>
                                         <Grid container justify='space-between'>
                                             <span>{NAME_MAP[selectedAsset]} Fee</span>
-                                            <span className={classes.amt}>{fee && amount ? `${fee} BTC` : '-'}</span>
+                                            <span className={classes.amt}>{fee && amount ? `${Number(fee).toFixed(8)} BTC` : '-'}</span>
                                         </Grid>
                                         <Grid container justify='space-between' className={classes.total}>
                                             <span>You Will Receive</span>
-                                            <span className={classes.amt}>{total && amount ? `~${total} ${destAsset}` : '-'}</span>
+                                            <span className={classes.amt}>{total && amount ? `~${Number(total).toFixed(8)} ${destAsset}` : '-'}</span>
                                         </Grid>
                                     </Grid>
                                 </Grid>

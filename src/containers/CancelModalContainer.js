@@ -38,6 +38,7 @@ const styles = () => ({
         display: 'flex',
         alignItems: 'center',
         marginBottom: theme.spacing(2),
+        fontWeight: 'bold'
     },
     arrow: {
         width: 30
@@ -73,7 +74,7 @@ class CancelModalContainer extends React.Component {
         const { store } = this.props
         const cancelModalTx = store.get('cancelModalTx')
 
-        removeTx(cancelModalTx.id)
+        removeTx(cancelModalTx)
 
         store.set('showCancelModal', false)
         store.set('cancelModalTx', null)
@@ -129,7 +130,7 @@ class CancelModalContainer extends React.Component {
                               </Typography>
 
                               {<Button
-                                  variant="contained"
+                                  variant="outlined"
                                   size='large'
                                   color="primary"
                                   fullWidth={true}
