@@ -300,7 +300,7 @@ export const completeConvertToEthereum = async function(transaction, approveSwap
     // update amount to the actual amount sent
     const tx = updateTx(Object.assign(transaction, { sourceAmount: userBtcTxAmount }))
 
-    const { id, params, renSignature, minExchangeRate } = tx
+    const { id, params, renSignature, minExchangeRate, maxSlippage } = tx
     const adapterContract = new localWeb3.eth.Contract(adapterABI, store.get('convert.adapterAddress'))
 
     // if swap will revert to renBTC, let the user know before proceeding
@@ -310,7 +310,7 @@ export const completeConvertToEthereum = async function(transaction, approveSwap
     if (!approveSwap && exchangeRate < minExchangeRate) {
         // console.log('showing modal')
         store.set('swapRevertModalTx', tx)
-        store.set('swapRevertModalExchangeRate', exchangeRate.toFixed(4))
+        store.set('swapRevertModalExchangeRate', exchangeRate.toFixed(8))
         store.set('showSwapRevertModal', true)
         updateTx(Object.assign(tx, { awaiting: 'eth-init' }))
         return

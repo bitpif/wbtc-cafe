@@ -99,7 +99,7 @@ class SwapRevertModalContainer extends React.Component {
         const renVMFee = (Number(swapRevertModalTx.sourceAmount) * dynamicFeeRate).toFixed(8)
         const networkFee = Number(fixedFee).toFixed(8)
         const total = Number(amount-renVMFee-fixedFee) > 0 ? Number(amount-renVMFee-fixedFee).toFixed(8) : '0.00000000'
-        const minRate = Number((swapRevertModalTx.minSwapProceeds / swapRevertModalTx.sourceAmount).toFixed(6))
+        const minRate = Number((swapRevertModalTx.minExchangeRate).toFixed(8))
 
         return <Modal
           aria-labelledby="transition-modal-title"
