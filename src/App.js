@@ -154,7 +154,7 @@ const initialState = {
     'convert.networkFee': '',
     'convert.renVMFee': '',
     'convert.conversionTotal': '',
-    'convert.maxSlippage': 0.005,
+    'convert.maxSlippage': 0.01,
 }
 
 class AppWrapper extends React.Component {

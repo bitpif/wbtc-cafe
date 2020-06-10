@@ -162,7 +162,7 @@ export const getExchangeRate = async function(tx) {
         const swapResult = (sourceAsset === 'wbtc' ?
           await curve.methods.get_dy(1, 0, amountInSats).call() :
           await curve.methods.get_dy(0, 1, amountInSats).call()) / (10 ** 8)
-        return Number(swapResult / amount).toFixed(4)
+        return Number(swapResult / amount)
     } catch (e) {
         console.log(e)
     }
@@ -194,7 +194,7 @@ export const gatherFeeData = async function() {
         // withdraw
         if (selectedDirection) {
             const swapResult = await curve.methods.get_dy(1, 0, amountInSats).call() / (10 ** 8)
-            exchangeRate = Number(swapResult / amount).toFixed(4)
+            exchangeRate = Number(swapResult / amount)
             renVMFee = (Number(swapResult) * dynamicFeeRate).toFixed(8)
             total = Number(swapResult-renVMFee-fixedFee) > 0 ? Number(swapResult-renVMFee-fixedFee).toFixed(8) : '0.000000'
         } else {
@@ -206,10 +206,10 @@ export const gatherFeeData = async function() {
 
             if (amountAfterMintInSats) {
                 const swapResult = await curve.methods.get_dy(0, 1, amountAfterMintInSats).call() / (10 ** 8)
-                exchangeRate = Number(swapResult / amountAfterMint).toFixed(4)
+                exchangeRate = Number(swapResult / amountAfterMint)
                 total = Number(swapResult).toFixed(8)
             } else {
-                exchangeRate = Number(0).toFixed(4)
+                exchangeRate = Number(0)
                 total = Number(0).toFixed(8)
             }
         }
@@ -263,15 +263,22 @@ export const monitorMintTx = async function(tx) {
 
         // Get transaction details
         const txDetails = await web3.eth.getTransaction(latestTx.destTxHash)
-        const currentBlock = await web3.eth.getBlockNumber()
-        const confs =  txDetails.blockNumber === null || txDetails.blockNumber > currentBlock ? 0 : currentBlock - txDetails.blockNumber
+        if (txDetails) {
+            const currentBlock = await web3.eth.getBlockNumber()
+            const confs =  txDetails.blockNumber === null || txDetails.blockNumber > currentBlock ? 0 : currentBlock - txDetails.blockNumber
 
-        // Update confs
-        if (confs > 0) {
+            // Update confs
+            if (confs > 0) {
+                updateTx(Object.assign(latestTx, {
+                    destTxConfs: confs,
+                    awaiting: '',
+                    error: false
+                }))
+                clearInterval(interval)
+            }
+        } else {
             updateTx(Object.assign(latestTx, {
-                destTxConfs: confs,
-                awaiting: '',
-                error: false
+                error: true
             }))
             clearInterval(interval)
         }
@@ -288,21 +295,22 @@ export const completeConvertToEthereum = async function(transaction, approveSwap
     // amount user sent
     const userBtcTxAmount = Number((renResponse.in.utxo.amount / (10 ** 8)).toFixed(8))
     // amount in renvm after fixed fee
-    const utxoAmount = renResponse.autogen.amount
+    const utxoAmountSats = renResponse.autogen.amount
+    const utxoAmount = Number(utxoAmountSats / (10 ** 8))
     // update amount to the actual amount sent
     const tx = updateTx(Object.assign(transaction, { sourceAmount: userBtcTxAmount }))
 
-    const { id, sourceAmount, params, renSignature, minSwapProceeds } = tx
+    const { id, params, renSignature, minExchangeRate } = tx
     const adapterContract = new localWeb3.eth.Contract(adapterABI, store.get('convert.adapterAddress'))
 
     // if swap will revert to renBTC, let the user know before proceeding
     const exchangeRate = await getExchangeRate(tx)
-    const expectedProceeds = Number(sourceAmount * exchangeRate)
+    updateTx(Object.assign(tx, { exchangeRateOnSubmit: exchangeRate }))
     // console.log(exchangeRate, expectedProceeds, minSwapProceeds)
-    if (!approveSwap && expectedProceeds < minSwapProceeds) {
+    if (!approveSwap && exchangeRate < minExchangeRate) {
         // console.log('showing modal')
         store.set('swapRevertModalTx', tx)
-        store.set('swapRevertModalExchangeRate', exchangeRate)
+        store.set('swapRevertModalExchangeRate', exchangeRate.toFixed(4))
         store.set('showSwapRevertModal', true)
         updateTx(Object.assign(tx, { awaiting: 'eth-init' }))
         return
@@ -319,7 +327,7 @@ export const completeConvertToEthereum = async function(transaction, approveSwap
                     params.contractCalls[0].contractParams[0].value,
                     params.contractCalls[0].contractParams[1].value,
                     params.contractCalls[0].contractParams[2].value,
-                    utxoAmount,
+                    utxoAmountSats,
                     renResponse.autogen.nhash,
                     renSignature
                 ).send({

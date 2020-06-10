@@ -237,6 +237,7 @@ class TransferContainer extends React.Component {
             minExchangeRate: exchangeRate,
             maxSlippage: maxSlippage,
             minSwapProceeds: minSwapProceeds,
+            exchangeRateOnSubmit: '',
             adapterAddress
             // minSwapProceeds: 100
             // txHash: '',
@@ -259,7 +260,7 @@ class TransferContainer extends React.Component {
         const asset = store.get('convert.selectedFormat')
         const maxSlippage = store.get('convert.maxSlippage')
         const exchangeRate = store.get('convert.exchangeRate')
-        const minSwapProceeds = Number((Number(amount * exchangeRate) * Number(1 - maxSlippage)).toFixed(6))
+        const minSwapProceeds = Number(amount * exchangeRate) * Number(1 - maxSlippage)
         const adapterAddress = store.get('convert.adapterAddress')
 
         const tx = {
@@ -453,7 +454,7 @@ class TransferContainer extends React.Component {
                                     <Grid item xs={12} className={classes.lineItem}>
                                         <Grid container justify='space-between'>
                                             <span>Exchange Rate</span>
-                                            <span className={classes.amt}>{exchangeRate && amount ? `1 ${sourceAsset} = ${exchangeRate} ${destAsset}` : '-'} </span>
+                                            <span className={classes.amt}>{exchangeRate && amount ? `1 ${sourceAsset} = ${Number(exchangeRate).toFixed(4)} ${destAsset}` : '-'} </span>
                                         </Grid>
                                         <Grid container justify='space-between'>
                                             <span>RenVM Fee</span>
