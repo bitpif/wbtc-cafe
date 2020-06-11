@@ -50,7 +50,7 @@ const styles = () => ({
       marginBottom: theme.spacing(2)
     },
     button: {
-        marginTop: theme.spacing(3)
+        marginTop: theme.spacing(1)
     },
     receiptTitle: {
         fontSize: 14
@@ -61,10 +61,12 @@ const styles = () => ({
     },
     total: {
         fontWeight: 'bold',
-        marginTop: theme.spacing(1)
+        marginTop: theme.spacing(1),
+        marginBottom: theme.spacing(2)
     },
     rates: {
-        textDecoration: 'italic'
+        // textDecoration: 'italic',
+        marginBottom: theme.spacing(2)
     },
     continueTitle: {
         marginBottom: theme.spacing(1)
@@ -97,7 +99,8 @@ class SwapRevertModalContainer extends React.Component {
         const dynamicFeeRate = Number(fees['btc'].ethereum['mint'] / 10000)
         const renVMFee = (Number(swapRevertModalTx.sourceAmount) * dynamicFeeRate).toFixed(8)
         const networkFee = Number(fixedFee).toFixed(8)
-        const total = Number(amount-renVMFee-fixedFee) > 0 ? Number(amount-renVMFee-fixedFee).toFixed(8) : '0.00000000'
+        const net = Number(amount-renVMFee-fixedFee) > 0 ? Number(amount-renVMFee-fixedFee).toFixed(8) : '0.00000000'
+        const total = Number(net * swapRevertModalExchangeRate).toFixed(8)
         const minRate = Number((swapRevertModalTx.minExchangeRate).toFixed(8))
 
         return <Modal
@@ -119,16 +122,26 @@ class SwapRevertModalContainer extends React.Component {
           <Fade in={showSwapRevertModal}>
             <Grid container className={classes.modalContent}>
                 <Typography variant='subtitle1' className={classes.title}>
-                    Warning: You Won't Receive Enough WBTC
+                    Exchange Rate Change
                 </Typography>
-
 
                 <Typography variant='body1' className={classes.content}>
-                    If you submit this transaction now, the amount of WBTC received won't reach the minimum amount, and the smart contract will send renBTC&nbsp;instead. This minimum amount was set to protect you from&nbsp;front-runners.
-                    <br />
-                    <br />
-                    This may be the result of the market exchange rate for WBTC/renBTC dropping below your minimum exchange rate, or an incorrect amount of BTC was sent to the gateway address.
+                    The swap has increased in price since you intiated your transaction. Would you like to complete the swap at the current market&nbsp;rate?
                 </Typography>
+                <Grid item xs={12}>
+                  <Grid container>
+                      <Grid item xs={6}>
+                           <Typography variant='body1' className={classes.receiptTitle}>
+                              Initial Min. Rate
+                           </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                          <Typography variant='body1' className={classes.receiptAmount}>
+                              {`${minRate} WBTC/renBTC`}
+                          </Typography>
+                      </Grid>
+                  </Grid>
+                </Grid>
                 <Grid item xs={12}>
                   <Grid container className={classes.rates}>
                       <Grid item xs={6}>
@@ -143,23 +156,6 @@ class SwapRevertModalContainer extends React.Component {
                       </Grid>
                   </Grid>
                 </Grid>
-                <Grid item xs={12}>
-                  <Grid container>
-                      <Grid item xs={6}>
-                           <Typography variant='body1' className={classes.receiptTitle}>
-                              Min. Required Rate
-                           </Typography>
-                      </Grid>
-                      <Grid item xs={6}>
-                          <Typography variant='body1' className={classes.receiptAmount}>
-                              {`${minRate} WBTC/renBTC`}
-                          </Typography>
-                      </Grid>
-                  </Grid>
-                </Grid>
-                <Typography variant='body1' className={classes.content}>
-                    As an alternative, you can also try again at a later time when the exchange rate is {minRate}&nbsp;WBTC/renBTC or higher, after which you will receive&nbsp;WBTC.
-                </Typography>
 
                 <Grid item xs={12}>
                   <Grid container>
@@ -215,13 +211,27 @@ class SwapRevertModalContainer extends React.Component {
                 <Grid item xs={12}>
                   <Grid container>
                       <Grid item xs={6}>
+                           <Typography variant='body1' className={classes.receiptTitle}>
+                              Funds Swapped
+                           </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                          <Typography variant='body1' className={classes.receiptAmount}>
+                              {`${net} renBTC`}
+                          </Typography>
+                      </Grid>
+                  </Grid>
+                </Grid>
+                <Grid item xs={12}>
+                  <Grid container>
+                      <Grid item xs={6}>
                            <Typography variant='body1' className={classNames(classes.receiptTitle, classes.total)}>
                               You Will Receive
                            </Typography>
                       </Grid>
                       <Grid item xs={6}>
                           <Typography variant='body1' className={classNames(classes.receiptAmount, classes.total)}>
-                              {`${total} renBTC`}
+                              {`~${total} WBTC`}
                           </Typography>
                       </Grid>
                   </Grid>
@@ -233,12 +243,24 @@ class SwapRevertModalContainer extends React.Component {
                     fullWidth={true}
                     className={classNames(classes.button)}
                     onClick={() => {
-                        const newTx = updateTx(Object.assign(swapRevertModalTx, { swapReverted: true }))
-                        completeConvertToEthereum(newTx, true)
+                        completeConvertToEthereum(swapRevertModalTx, 'wbtc')
                         store.set('showSwapRevertModal', false)
                     }}
                     >
-                    Continue and Receive renBTC
+                    Continue Swap
+                </Button>
+                <Button
+                    size='large'
+                    color="primary"
+                    fullWidth={true}
+                    className={classNames(classes.button)}
+                    onClick={() => {
+                        const newTx = updateTx(Object.assign(swapRevertModalTx, { swapReverted: true }))
+                        completeConvertToEthereum(newTx, 'renbtc')
+                        store.set('showSwapRevertModal', false)
+                    }}
+                    >
+                    Get renBTC Instead
                 </Button>
             </Grid>
           </Fade>

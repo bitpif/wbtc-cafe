@@ -195,7 +195,7 @@ export const gatherFeeData = async function() {
         let exchangeRate
         let renVMFee
         let total
-        const amountInSats = RenJS.utils.value(amount, "btc").sats().toNumber()
+        const amountInSats = Math.round(RenJS.utils.value(amount, "btc").sats().toNumber())
         const curve = new dataWeb3.eth.Contract(curveABI, selectedNetwork === 'testnet' ? CURVE_TEST : CURVE_MAIN)
 
         // withdraw
@@ -292,7 +292,7 @@ export const monitorMintTx = async function(tx) {
     }, 1000)
 }
 
-export const completeConvertToEthereum = async function(transaction, approveSwap) {
+export const completeConvertToEthereum = async function(transaction, approveSwappedAsset) {
     const store = getStore()
     const localWeb3 = store.get('localWeb3')
     const localWeb3Address = store.get('localWeb3Address')
@@ -314,7 +314,7 @@ export const completeConvertToEthereum = async function(transaction, approveSwap
     const exchangeRate = await getFinalDepositExchangeRate(tx)
     updateTx(Object.assign(tx, { exchangeRateOnSubmit: exchangeRate }))
     // console.log(exchangeRate, minExchangeRate)
-    if (!approveSwap && exchangeRate < minExchangeRate) {
+    if (!approveSwappedAsset && exchangeRate < minExchangeRate) {
         // console.log('showing modal')
         store.set('swapRevertModalTx', tx)
         store.set('swapRevertModalExchangeRate', exchangeRate.toFixed(8))
@@ -322,6 +322,10 @@ export const completeConvertToEthereum = async function(transaction, approveSwap
         updateTx(Object.assign(tx, { awaiting: 'eth-init' }))
         return
     }
+
+    const newMinExchangeRate = approveSwappedAsset === 'wbtc' ?
+        RenJS.utils.value(exchangeRate, "btc").sats().toNumber().toFixed(0) :
+        params.contractCalls[0].contractParams[0].value
 
     // setTimeout(async () => {
         if (!tx.destTxHash) {
@@ -331,7 +335,7 @@ export const completeConvertToEthereum = async function(transaction, approveSwap
             try {
                 await adapterContract.methods.mintThenSwap(
                     params.contractCalls[0].contractParams[0].value,
-                    params.contractCalls[0].contractParams[0].value,
+                    newMinExchangeRate,
                     params.contractCalls[0].contractParams[1].value,
                     params.contractCalls[0].contractParams[2].value,
                     utxoAmountSats,
@@ -411,7 +415,7 @@ export const initMint = function(tx) {
     // store data or update params with nonce
     const data = {
         sendToken: RenJS.Tokens.BTC.Btc2Eth,
-        suggestedAmount: RenJS.utils.value(amount, "btc").sats().toNumber(), // Convert to Satoshis
+        suggestedAmount: RenJS.utils.value(amount, "btc").sats().toNumber().toFixed(0),
         sendTo: adapterAddress,
         contractFn,
         contractParams,
@@ -605,8 +609,8 @@ export const initConvertFromEthereum = async function(tx) {
     try {
         await adapter.methods.swapThenBurn(
             RenJS.utils.BTC.addressToHex(destAddress), //_to
-            RenJS.utils.value(amount, "btc").sats().toNumber(), // _amount in Satoshis
-            RenJS.utils.value(minSwapProceeds, "btc").sats().toNumber()
+            RenJS.utils.value(amount, "btc").sats().toNumber().toFixed(0), // _amount in Satoshis
+            RenJS.utils.value(minSwapProceeds, "btc").sats().toNumber().toFixed(0)
         ).send({ from })
         .on('transactionHash', hash => {
             // console.log(hash)
