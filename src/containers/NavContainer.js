@@ -83,6 +83,13 @@ const styles = () => ({
     addressLabel: {
         paddingTop: theme.spacing(1),
         paddingBottom: theme.spacing(1)
+    },
+    actionsContainer: {
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        [theme.breakpoints.down('xs')]: {
+            justifyContent: 'flex-start'
+        }
     }
 })
 
@@ -130,7 +137,7 @@ class NavContainer extends React.Component {
                     </Grid>
                 </Grid>
                 <Grid item xs={12} sm={8}>
-                    <Grid container justify='flex-end' alignItems='center'>
+                    <Grid className={classes.actionsContainer} container>
                       {isSignedIn && <div className={classes.faq}>
                           <Typography variant='caption'>Balance: {balance} WBTC</Typography>
                       </div>}
