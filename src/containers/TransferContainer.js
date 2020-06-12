@@ -206,7 +206,7 @@ class TransferContainer extends React.Component {
         const { store } = this.props
         const address = store.get('localWeb3Address')
         this.ethAddressRef.current.value = address
-        store.set('convert.destAddress', address)
+        store.set('convert.destination', address)
         store.set('convert.destinationValid', AddressValidator.validate(address, 'ETH'))
     }
 
