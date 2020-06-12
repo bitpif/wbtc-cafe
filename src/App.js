@@ -50,7 +50,8 @@ firebase.initializeApp({
   authDomain: window.location.hostname,
   projectId: 'wbtc-portal'
 })
-firebase.firestore().enablePersistence()
+
+// firebase.firestore().enablePersistence()
 
 const styles = () => ({
   container: {

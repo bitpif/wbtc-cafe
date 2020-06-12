@@ -185,6 +185,7 @@ class TransferContainer extends React.Component {
         super(props);
         this.state = props.store.getState()
         this.wbtcAmountRef = React.createRef()
+        this.ethAddressRef = React.createRef()
     }
 
     componentDidMount() {
@@ -201,6 +202,14 @@ class TransferContainer extends React.Component {
         store.set('depositModalTx', tx)
     }
 
+    fillWalletAddress() {
+        const { store } = this.props
+        const address = store.get('localWeb3Address')
+        this.ethAddressRef.current.value = address
+        store.set('convert.destAddress', address)
+        store.set('convert.destinationValid', AddressValidator.validate(address, 'ETH'))
+    }
+
     async newDeposit() {
         const { store } = this.props
         if (!store.get('localWeb3')) return initLocalWeb3()
@@ -215,6 +224,7 @@ class TransferContainer extends React.Component {
         const expectedTotal = store.get('convert.conversionTotal')
         const minSwapProceeds = Number((Number(expectedTotal) * Number(1 - maxSlippage)).toFixed(6))
         const adapterAddress = store.get('convert.adapterAddress')
+        const localWeb3Address = store.get('convert.localWeb3Address')
 
         const tx = {
             id: 'tx-' + Math.floor(Math.random() * (10 ** 16)),
@@ -238,7 +248,8 @@ class TransferContainer extends React.Component {
             maxSlippage: maxSlippage,
             minSwapProceeds: minSwapProceeds,
             exchangeRateOnSubmit: '',
-            adapterAddress
+            adapterAddress,
+            localWeb3Address
             // minSwapProceeds: 100
             // txHash: '',
         }
@@ -262,6 +273,7 @@ class TransferContainer extends React.Component {
         const exchangeRate = store.get('convert.exchangeRate')
         const minSwapProceeds = Number(amount * exchangeRate) * Number(1 - maxSlippage)
         const adapterAddress = store.get('convert.adapterAddress')
+        const localWeb3Address = store.get('convert.localWeb3Address')
 
         const tx = {
             id: 'tx-' + Math.floor(Math.random() * (10 ** 16)),
@@ -283,6 +295,8 @@ class TransferContainer extends React.Component {
             minExchangeRate: exchangeRate,
             maxSlippage: maxSlippage,
             minSwapProceeds: minSwapProceeds,
+            adapterAddress,
+            localWeb3Address: localWeb3Address.toLowerCase()
             // minSwapProceeds: 100
             // txHash: ''
         }
@@ -357,7 +371,8 @@ class TransferContainer extends React.Component {
                                     exclusive
                                     onChange={(event, newValue) => {
                                         if (newValue) {
-                                            store.set('convert.selectedDirection', Number(newValue))
+                                            const nv = Number(newValue)
+                                            store.set('convert.selectedDirection', nv)
                                             store.set('convert.amount', '')
                                             store.set('convert.destination', '')
                                             gatherFeeData()
@@ -388,17 +403,25 @@ class TransferContainer extends React.Component {
                                             items={['BTC']} />
                                     </Grid>
                                     <Grid item xs={12}>
-                                        <TextField
-                                            id="standard-read-only-input"
-                                            placeholder='Ethereum Destination Address'
-                                            className={classes.depositAddress}
-                                            margin="dense"
-                                            variant="outlined"
-                                            onChange={(event) => {
-                                                store.set('convert.destination', event.target.value)
-                                                store.set('convert.destinationValid', AddressValidator.validate(event.target.value, 'ETH'))
-                                            }}
-                                        />
+                                        <Grid container direction='row' alignItems='center'>
+                                            <Grid item className={classes.amountContainer}>
+                                                <TextField
+                                                    inputRef={this.ethAddressRef}
+                                                    placeholder='Ethereum Destination Address'
+                                                    className={classes.depositAddress}
+                                                    margin="dense"
+                                                    variant="outlined"
+                                                    onChange={(event) => {
+                                                        store.set('convert.destination', event.target.value)
+                                                        store.set('convert.destinationValid', AddressValidator.validate(event.target.value, 'ETH'))
+                                                    }}
+                                                />
+                                            </Grid>
+                                            <ActionLink className={classes.maxLink}
+                                                onClick={() => {
+                                                    this.fillWalletAddress()
+                                                }}>Wallet</ActionLink>
+                                        </Grid>
                                     </Grid>
                                 </Grid>
 
@@ -424,8 +447,10 @@ class TransferContainer extends React.Component {
                                             </Grid>
                                             <ActionLink className={classes.maxLink}
                                                 onClick={() => {
-                                                    this.wbtcAmountRef.current.value = store.get('wbtcBalance')
-                                                    // console.log(this.wbtcAmountRef.current.value)
+                                                    const bal = store.get('wbtcBalance')
+                                                    this.wbtcAmountRef.current.value = bal
+                                                    store.set('convert.amount', bal)
+                                                    gatherFeeData()
                                                 }}>Max</ActionLink>
                                         </Grid>
                                     </Grid>

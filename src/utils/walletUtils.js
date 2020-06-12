@@ -190,7 +190,9 @@ export const initLocalWeb3 = async function() {
 
     // recover from localStorage
     const lsData = localStorage.getItem('convert.transactions')
-    const lsTransactions = lsData ? JSON.parse(lsData) : []
+
+    const lsTransactions = lsData ? JSON.parse(lsData)
+        .filter(tx => tx.localWeb3Address === addressLowerCase) : []
     const lsIds = lsTransactions.map(t => t.id)
 
     try {
@@ -224,21 +226,28 @@ export const initLocalWeb3 = async function() {
         store.set('fsSignature', signature)
 
         // auth with firestore
-        let fsUser;
-        try {
-            fsUser = await firebase.auth()
-                .signInWithEmailAndPassword(`${addressLowerCase}@wbtc.cafe`, signature)
-        } catch(e) {
-            console.log(e)
-            console.log('new user')
-            fsUser = await firebase.auth()
-                .createUserWithEmailAndPassword(`${addressLowerCase}@wbtc.cafe`, signature)
+        const cafeId = `${addressLowerCase}@wbtc.cafe`
+        const currentFsUser = firebase.auth().currentUser
+        let fsUser
+
+        if (!currentFsUser || currentFsUser.email !== cafeId) {
+            try {
+                fsUser = (await firebase.auth()
+                    .signInWithEmailAndPassword(cafeId, signature)).user
+            } catch(e) {
+                console.log(e)
+                console.log('new user')
+                fsUser = (await firebase.auth()
+                    .createUserWithEmailAndPassword(cafeId, signature)).user
+            }
+        } else {
+            fsUser = currentFsUser
         }
 
         store.set('fsUser', fsUser)
 
         // update user collection
-        const doc = await db.collection("users").doc(fsUser.user.uid)
+        const doc = await db.collection("users").doc(fsUser.uid)
         const docData = await doc.get()
         // console.log('docData', docData)
         if (docData.exists) {
@@ -253,7 +262,7 @@ export const initLocalWeb3 = async function() {
         } else {
             // create user
             await doc.set({
-                uid: fsUser.user.uid,
+                uid: fsUser.uid,
                 updated: firebase.firestore.Timestamp.fromDate(new Date(Date.now())),
                 signatures: [signature]
             })

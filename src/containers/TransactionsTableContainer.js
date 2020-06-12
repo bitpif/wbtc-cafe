@@ -103,7 +103,7 @@ class TransactionsTableContainer extends React.Component {
                       <Typography variant='caption'>Loading transactions...</Typography>
                   : <React.Fragment>
                       {error ?
-                        <Typography variant='caption'>Sign in failed. <ActionLink onClick={initLocalWeb3}>Retry</ActionLink></Typography>
+                        <Typography variant='caption'>Connect failed. <ActionLink onClick={initLocalWeb3}>Retry</ActionLink></Typography>
                       : signedIn && !transactions.length ?
                         <Typography variant='caption'>No transactions</Typography>
                       : !signedIn ?

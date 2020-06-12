@@ -456,11 +456,8 @@ export const initConvertToEthereum = async function(tx) {
     }
 
     // ren already exposed a signature
-    if (renResponse && renSignature && !error) {
-        // sometimes api calls fail when loading the page
-        // setTimeout(() => {
+    if (renResponse && renSignature) {
         completeConvertToEthereum.bind(this)(tx)
-        // }, 1000)
     } else {
         // create or re-create shift in
         const mint = await initMint.bind(this)(tx)
@@ -513,7 +510,9 @@ export const initConvertToEthereum = async function(tx) {
                 })
         }
 
-        updateTx(Object.assign(tx, { awaiting: 'ren-settle' }))
+        if (awaiting !== 'eth-init' || awaiting !== 'eth-settle') {
+            updateTx(Object.assign(tx, { awaiting: 'ren-settle' }))
+        }
 
         try {
             const signature = await deposit.submit();
@@ -635,7 +634,11 @@ export const initMonitoring = function() {
 
     txs.map(tx => {
         if (tx.sourceNetwork === 'bitcoin') {
-            initConvertToEthereum.bind(this)(tx)
+            if (tx.destTxHash) {
+                monitorMintTx(tx)
+            } else {
+                initConvertToEthereum.bind(this)(tx)
+            }
         } else if (tx.sourceNetwork === 'ethereum' && tx.awaiting && !tx.error) {
             monitorBurnTx(tx)
         }

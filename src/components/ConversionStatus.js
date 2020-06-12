@@ -36,7 +36,8 @@ const ConversionStatus = function(props) {
                 {!tx.awaiting ? <span>{`Complete`}</span> : null}
             </Typography> : <Typography variant='caption'>
                 {tx.awaiting === 'eth-settle' ? <span>
-                    {tx.error ? (tx.sourceTxHash ? `Transaction Failed` : `Submit to Ethereum`) : `Transaction confirming (${tx.sourceTxConfs}/${targetEthConfs} complete)`}
+                    {tx.sourceTxHash ? (tx.error ? `Transaction Failed` : `Transaction confirming (${tx.sourceTxConfs}/${targetEthConfs} complete)`) : `Submit to Ethereum`}
+                    {/*tx.error ? (tx.sourceTxHash ? `Transaction Failed` : `Submit to Ethereum`) : `Transaction confirming (${tx.sourceTxConfs}/${targetEthConfs} complete)`*/}
                 </span> : null}
                 {tx.awaiting === 'ren-settle' ? <span>
                     {`Submitting to RenVM`}

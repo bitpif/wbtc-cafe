@@ -24,7 +24,8 @@ const ConversionActions = function(props) {
 
     return <React.Fragment>
       <div>
-        {direction === 'in' && tx.destTxHash ? <a className={classes.viewLink} target='_blank' href={'https://' + (tx.destNetworkVersion === 'testnet' ? 'kovan.' : '') + 'etherscan.io/tx/'+tx.destTxHash}>View ETH Transaction</a> : null}
+        {direction === 'in' && tx.sourceTxHash && <a className={classes.viewLink} target='_blank' href={`https://sochain.com/tx/BTC${tx.sourceNetworkVersion === 'testnet' ? 'TEST' : ''}/${tx.sourceTxHash}`}>View BTC TX</a>}
+        {direction === 'in' && tx.destTxHash ? <a className={classes.viewLink} target='_blank' href={'https://' + (tx.destNetworkVersion === 'testnet' ? 'kovan.' : '') + 'etherscan.io/tx/'+tx.destTxHash}>View ETH TX</a> : null}
         {direction === 'in' && tx.awaiting === 'btc-init' && !tx.error && <React.Fragment>
             <a className={classes.viewLink} onClick={() => {
                 // view modal
@@ -32,15 +33,14 @@ const ConversionActions = function(props) {
                 store.set('gatewayModalTx', tx)
             }}>View Gateway Address</a>
             <a className={classes.viewLink} onClick={() => {
-                // TODO: are you sure modal
+                // are you sure modal
                 store.set('showCancelModal', true)
                 store.set('cancelModalTx', tx)
             }}>Cancel</a>
         </React.Fragment>}
-        {direction === 'in' && tx.awaiting === 'btc-settle' && tx.sourceTxHash && <a className={classes.viewLink} target='_blank' href={`https://sochain.com/tx/BTC${tx.sourceNetworkVersion === 'testnet' ? 'TEST' : ''}/${tx.sourceTxHash}`}>View BTC Transaction</a>}
 
-        {direction === 'out' && tx.sourceTxHash && tx.awaiting === 'eth-settle' ? <a className={classes.viewLink} target='_blank' href={'https://' + (tx.sourceNetworkVersion === 'testnet' ? 'kovan.' : '') + 'etherscan.io/tx/'+tx.sourceTxHash}>View Transaction</a> : null}
-        {direction === 'out' && tx.awaiting === '' && tx.destAddress && <a className={classes.viewLink} target='_blank' href={`https://sochain.com/address/BTC${tx.destNetworkVersion === 'testnet' ? 'TEST' : ''}/${tx.destAddress}`}>View BTC Transaction</a>}
+        {direction === 'out' && tx.sourceTxHash ? <a className={classes.viewLink} target='_blank' href={'https://' + (tx.sourceNetworkVersion === 'testnet' ? 'kovan.' : '') + 'etherscan.io/tx/'+tx.sourceTxHash}>View ETH TX</a> : null}
+        {direction === 'out' && tx.destAddress && <a className={classes.viewLink} target='_blank' href={`https://sochain.com/address/BTC${tx.destNetworkVersion === 'testnet' ? 'TEST' : ''}/${tx.destAddress}`}>View BTC TX</a>}
 
         {(tx.error && tx.awaiting === 'eth-settle' || tx.awaiting === 'eth-init') && <React.Fragment>
             <a className={classes.viewLink} onClick={() => {
