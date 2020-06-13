@@ -40,7 +40,7 @@ const ConversionActions = function(props) {
         </React.Fragment>}
 
         {direction === 'out' && tx.sourceTxHash ? <a className={classes.viewLink} target='_blank' href={'https://' + (tx.sourceNetworkVersion === 'testnet' ? 'kovan.' : '') + 'etherscan.io/tx/'+tx.sourceTxHash}>View ETH TX</a> : null}
-        {direction === 'out' && tx.destAddress && <a className={classes.viewLink} target='_blank' href={`https://sochain.com/address/BTC${tx.destNetworkVersion === 'testnet' ? 'TEST' : ''}/${tx.destAddress}`}>View BTC TX</a>}
+        {direction === 'out' && !tx.awaiting && tx.destAddress && <a className={classes.viewLink} target='_blank' href={`https://sochain.com/address/BTC${tx.destNetworkVersion === 'testnet' ? 'TEST' : ''}/${tx.destAddress}`}>View BTC TX</a>}
 
         {(tx.error && tx.awaiting === 'eth-settle' || tx.awaiting === 'eth-init') && <React.Fragment>
             <a className={classes.viewLink} onClick={() => {

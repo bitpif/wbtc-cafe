@@ -224,7 +224,7 @@ class TransferContainer extends React.Component {
         const expectedTotal = store.get('convert.conversionTotal')
         const minSwapProceeds = Number((Number(expectedTotal) * Number(1 - maxSlippage)).toFixed(6))
         const adapterAddress = store.get('convert.adapterAddress')
-        const localWeb3Address = store.get('convert.localWeb3Address')
+        const localWeb3Address = store.get('localWeb3Address')
 
         const tx = {
             id: 'tx-' + Math.floor(Math.random() * (10 ** 16)),
@@ -249,7 +249,7 @@ class TransferContainer extends React.Component {
             minSwapProceeds: minSwapProceeds,
             exchangeRateOnSubmit: '',
             adapterAddress,
-            localWeb3Address
+            localWeb3Address: localWeb3Address.toLowerCase()
             // minSwapProceeds: 100
             // txHash: '',
         }
@@ -273,7 +273,7 @@ class TransferContainer extends React.Component {
         const exchangeRate = store.get('convert.exchangeRate')
         const minSwapProceeds = Number(amount * exchangeRate) * Number(1 - maxSlippage)
         const adapterAddress = store.get('convert.adapterAddress')
-        const localWeb3Address = store.get('convert.localWeb3Address')
+        const localWeb3Address = store.get('localWeb3Address')
 
         const tx = {
             id: 'tx-' + Math.floor(Math.random() * (10 ** 16)),
