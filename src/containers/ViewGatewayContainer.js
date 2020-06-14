@@ -1,6 +1,7 @@
 import React from 'react';
 import { withStore } from '@spyna/react-store'
 import { withStyles } from '@material-ui/styles';
+import QRCode from 'qrcode.react'
 import theme from '../theme/theme'
 import classNames from 'classnames'
 
@@ -85,6 +86,10 @@ const styles = () => ({
         cursor: 'pointer',
         fontSize: 12,
         marginTop: theme.spacing(1)
+    },
+    qrCode: {
+        width: '100%',
+        paddingTop: theme.spacing(2)
     }
 })
 
@@ -171,6 +176,10 @@ class ViewGatewayContainer extends React.Component {
                                 }}>
                                     Copy Address
                               </ActionLink>
+
+                              {gatewayModalTx.renBtcAddress && <div className={classes.qrCode}>
+                                <QRCode size={116} value={gatewayModalTx.renBtcAddress} />
+                              </div>}
 
                               <Button
                                   variant="outlined"
