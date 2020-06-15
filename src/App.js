@@ -169,7 +169,8 @@ class AppWrapper extends React.Component {
         const params = queryString.parse(window.location.search)
         store.set('queryParams', params)
 
-        setNetwork(params.network === 'mainnet' ? 'mainnet' : 'testnet')
+        // default to mainnet
+        setNetwork(params.network === 'testnet' ? 'testnet' : 'mainnet')
 
         initDataWeb3()
         updateRenVMFees()
